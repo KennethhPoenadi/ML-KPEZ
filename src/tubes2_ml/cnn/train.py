@@ -6,6 +6,7 @@ from typing import Any
 import numpy as np
 import tensorflow as tf
 from tubes2_ml.cnn.models import SharedConvCNNConfig, build_shared_conv_cnn
+from tubes2_ml.evaluation.cnn_metrics import macro_f1_score
 
 @dataclass(frozen=True)
 class CNNTrainingConfig:
@@ -105,10 +106,11 @@ def train_shared_conv_cnn(model_config: SharedConvCNNConfig,training_config: CNN
 
     model = build_shared_conv_cnn(model_config)
     run_name = model_config.name
+    weights_path = output_dir / f"{run_name}.weights.h5"
 
     default_callbacks = [
         tf.keras.callbacks.ModelCheckpoint(
-            filepath=str(output_dir / f"{run_name}.weights.h5"),
+            filepath=str(weights_path),
             save_weights_only=True,
             save_best_only=True,
             monitor="val_loss",
@@ -123,6 +125,12 @@ def train_shared_conv_cnn(model_config: SharedConvCNNConfig,training_config: CNN
         callbacks=[*default_callbacks, *(callbacks or [])],
     )
 
+    if weights_path.exists():
+        model.load_weights(weights_path)
+
+    val_pred, val_true = predict_dataset(model, val_ds)
+    val_macro_f1 = macro_f1_score(val_true, val_pred, num_classes=len(class_names))
+
     model_path = output_dir / f"{run_name}.keras"
 
     if training_config.save_format == "keras":
@@ -133,6 +141,13 @@ def train_shared_conv_cnn(model_config: SharedConvCNNConfig,training_config: CNN
         "training_config": asdict(training_config),
         "class_names": class_names,
         "history": _jsonable_history(history.history),
+        "metrics": {
+            "validation_macro_f1": val_macro_f1,
+        },
+        "artifacts": {
+            "weights_path": str(weights_path),
+            "model_path": str(model_path) if training_config.save_format == "keras" else None,
+        },
     }
     metadata_path = history_dir / f"{run_name}.json"
     metadata_path.write_text(json.dumps(metadata, indent=2, default=str), encoding="utf-8")
