@@ -1,8 +1,6 @@
 import numpy as np
 from PIL import Image
-
 from tubes2_ml.cnn.feature_extraction import extract_features_to_npy
-
 
 class FakeEncoder:
     def __init__(self):
@@ -14,7 +12,6 @@ class FakeEncoder:
         means = batch.mean(axis=(1, 2, 3), keepdims=False)
         maxima = batch.max(axis=(1, 2, 3))
         return np.stack([means, maxima], axis=1)
-
 
 def test_extract_features_to_npy_saves_features_and_freezes_encoder(tmp_path):
     image_paths = []
@@ -39,7 +36,6 @@ def test_extract_features_to_npy_saves_features_and_freezes_encoder(tmp_path):
     assert features.shape == (3, 2)
     assert output_path.is_file()
     np.testing.assert_allclose(np.load(output_path), features)
-
 
 def test_extract_features_to_npy_uses_cache_when_output_exists(tmp_path):
     output_path = tmp_path / "features.npy"
