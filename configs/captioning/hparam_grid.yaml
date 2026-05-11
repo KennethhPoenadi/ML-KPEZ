@@ -1,0 +1,25 @@
+model:
+  embed_dim: 256
+  dropout_rate: 0.0
+  learning_rate: 0.001
+
+training:
+  processed_dir: data/processed/captioning
+  features_dir: data/features/captioning
+  output_dir: models/keras/captioning
+  history_dir: artifacts/experiments/captioning
+  batch_size: 64
+  epochs: 10
+  seed: 42
+
+grid:
+  decoders:
+    - rnn
+    - lstm
+  num_recurrent_layers:
+    - 1
+    - 2
+    - 3
+  hidden_units:
+    - 128
+    - 512
