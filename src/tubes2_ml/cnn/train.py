@@ -14,12 +14,13 @@ class CNNTrainingConfig:
     validation_dir: str | Path | None = None  # use validation_split when this is None
     output_dir: str | Path = "models/keras/cnn"  # saved Keras models and weights <- for the path yaw
     history_dir: str | Path = "artifacts/experiments/cnn"  # training logs and metadata
-    image_size: tuple[int, int] = (150, 150)  # image resize target as (height, width)
-    batch_size: int = 32  # number of images per training batch
-    epochs: int = 10  # number of full passes over the training set
+    image_size: tuple[int, int] = (96, 96)  # image resize target as (height, width)
+    batch_size: int = 64  # number of images per training batch
+    epochs: int = 5  # number of full passes over the training set
     validation_split: float = 0.2  # fraction of train_dir used for validation
     seed: int = 42
     save_format: str = "keras"  # save full model as .keras when enabled
+    early_stopping_patience: int | None = 1
 
 def _make_dataset_from_directory(directory: str | Path,image_size: tuple[int, int],batch_size: int,seed: int,subset: str | None = None,validation_split: float | None = None,shuffle: bool = True):
     kwargs: dict[str, Any] = {
@@ -82,7 +83,7 @@ def build_intel_datasets(config: CNNTrainingConfig):
             seed=config.seed,
             subset="validation",
             validation_split=config.validation_split,
-            shuffle=False,
+            shuffle=True,
         )
 
     autotune = tf.data.AUTOTUNE
@@ -117,6 +118,15 @@ def train_shared_conv_cnn(model_config: SharedConvCNNConfig,training_config: CNN
         ),
         tf.keras.callbacks.CSVLogger(str(history_dir / f"{run_name}.csv")),
     ]
+
+    if training_config.early_stopping_patience is not None:
+        default_callbacks.append(
+            tf.keras.callbacks.EarlyStopping(
+                monitor="val_loss",
+                patience=training_config.early_stopping_patience,
+                restore_best_weights=True,
+            )
+        )
 
     history = model.fit(
         train_ds,
