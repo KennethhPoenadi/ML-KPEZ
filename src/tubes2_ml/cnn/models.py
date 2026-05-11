@@ -4,7 +4,7 @@ import tensorflow as tf
 
 @dataclass(frozen=True)
 class SharedConvCNNConfig:
-    input_shape: tuple[int, int, int] = (150, 150, 3)  # input image shape as (height, width, channels)
+    input_shape: tuple[int, int, int] = (96, 96, 3)  # input image shape as (height, width, channels)
     num_classes: int = 6  # intel dataset has 6 classes
     conv_filters: tuple[int, ...] = (32, 64)  # number of filters for each Conv2D layer
     kernel_sizes: tuple[int, ...] = (3, 3)  # kernel size for each Conv2D layer

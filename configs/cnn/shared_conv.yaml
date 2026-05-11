@@ -1,6 +1,6 @@
 model:
   name: shared_conv_cnn
-  input_shape: [150, 150, 3]
+  input_shape: [96, 96, 3]
   num_classes: 6
   conv_filters: [32, 64]
   kernel_sizes: [3, 3]
@@ -15,8 +15,9 @@ training:
   validation_dir:
   output_dir: models/keras/cnn
   history_dir: artifacts/experiments/cnn
-  image_size: [150, 150]
-  batch_size: 32
-  epochs: 10
+  image_size: [96, 96]
+  batch_size: 64
+  epochs: 5
   validation_split: 0.2
   seed: 42
+  early_stopping_patience: 1
