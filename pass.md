@@ -9,7 +9,9 @@ Audit ini dibuat dari kondisi repo lokal saat ini. Status `sudah` berarti implem
 - [x] Evaluasi CNN terbaik, plot loss, dan analisis CNN sudah tersimpan sebagai artifact.
 - [ ] Evaluasi scratch CNN full test belum dijalankan; artifact saat ini memakai `scratch_max_batches=1` untuk smoke run.
 - [x] Implementasi kode RNN/LSTM captioning sudah ada.
-- [ ] Dataset/artifact Flickr8k lokal belum ada; folder masih hanya `.gitkeep`.
+- [x] Dataset Flickr8k lokal sudah ada dan valid: 8.091 image, 40.455 caption record, 5 caption per image.
+- [x] Preprocessing caption sudah dijalankan dan artifact split/vocabulary sudah ada.
+- [x] Feature extraction Flickr8k sudah selesai dengan InceptionV3, 8.091 feature vector shape 2.048.
 - [ ] Training 12 variasi RNN/LSTM, evaluasi BLEU-4/METEOR, prediksi, dan analisis captioning belum selesai.
 - [x] File laporan/ringkasan CNN sudah ada di `artifacts/reports`.
 
@@ -120,11 +122,15 @@ Audit ini dibuat dari kondisi repo lokal saat ini. Status `sudah` berarti implem
   - File: `src/tubes2_ml/captioning/feature_extraction.py`
 - [x] Script extraction tersedia.
   - File: `scripts/extract_caption_features.py`
-- [ ] Data Flickr8k lokal belum ada. `data/raw/flickr8k/images` dan `data/raw/flickr8k/captions` hanya berisi `.gitkeep`.
-- [ ] Artifact feature extraction lokal belum ada.
-  - Belum ada `data/features/captioning/features.npy`
-  - Belum ada `data/features/captioning/image_ids.json`
-  - Belum ada `data/features/captioning/metadata.json`
+- [x] Data Flickr8k lokal sudah ada di path yang benar.
+  - `data/raw/flickr8k/images`: 8.091 image.
+  - `data/raw/flickr8k/captions/captions.txt`: 40.455 caption record.
+  - Validasi: semua caption image id punya file gambar, semua gambar punya caption, min/max caption per image = 5/5.
+- [x] Artifact feature extraction lokal sudah ada.
+  - `data/features/captioning/features.npy`
+  - `data/features/captioning/image_ids.json`
+  - `data/features/captioning/metadata.json`
+  - Hasil: 8.091 feature vector, shape `(8091, 2048)`, encoder `inception_v3`.
 - [x] Feature extraction captioning sudah reuse utility image CNN.
   - File: `src/tubes2_ml/captioning/feature_extraction.py`
 
@@ -142,11 +148,13 @@ Audit ini dibuat dari kondisi repo lokal saat ini. Status `sudah` berarti implem
   - File: `src/tubes2_ml/captioning/preprocessing.py`
 - [x] Script preprocessing tersedia.
   - File: `scripts/preprocess_captions.py`
-- [ ] Artifact preprocessing lokal belum ada.
-  - Belum ada `data/processed/captioning/vocabulary.json`
-  - Belum ada `data/processed/captioning/train.npz`
-  - Belum ada `data/processed/captioning/validation.npz`
-  - Belum ada `data/processed/captioning/test.npz`
+- [x] Artifact preprocessing lokal sudah ada.
+  - `data/processed/captioning/vocabulary.json`
+  - `data/processed/captioning/metadata.json`
+  - `data/processed/captioning/train.npz`
+  - `data/processed/captioning/validation.npz`
+  - `data/processed/captioning/test.npz`
+  - Hasil: vocab size 7.464, max caption length 38, split 30.000 train / 5.000 validation / 5.000 test captions.
 
 ### Bagian 3: Pelatihan Decoder Keras
 
@@ -181,7 +189,7 @@ Audit ini dibuat dari kondisi repo lokal saat ini. Status `sudah` berarti implem
 - [x] Pipeline raw image ke caption sudah tersedia lewat frozen CNN encoder + decoder.
   - File: `src/tubes2_ml/captioning/inference.py`
   - Gunakan `--image-path` untuk raw image atau `--image-id` untuk cached feature.
-- [ ] Belum bisa dijalankan end-to-end lokal karena feature/model captioning belum ada.
+- [ ] Belum bisa dijalankan end-to-end lokal karena feature extraction dan model captioning belum ada.
 
 ### Bagian 5: Eksperimen
 
@@ -217,14 +225,15 @@ Audit ini dibuat dari kondisi repo lokal saat ini. Status `sudah` berarti implem
 - [x] Import layer/model scratch berhasil.
 - [x] Generator grid CNN menghasilkan 16 konfigurasi.
 - [x] Generator grid captioning menghasilkan 12 konfigurasi.
+- [x] Validasi dataset Flickr8k berhasil: 8.091 image id, 40.455 caption, tidak ada mismatch image-caption.
+- [x] `scripts/preprocess_captions.py` berhasil membuat vocabulary dan split captioning.
+- [x] `scripts/extract_caption_features.py` berhasil membuat feature InceptionV3 untuk 8.091 gambar.
 - [x] `scripts/generate_cnn_report.py` berhasil membuat 16 plot loss dan report CNN.
 - [x] `scripts/evaluate_cnn_best.py --scratch-max-batches 1` berhasil membuat artifact evaluasi CNN.
 
 ## Yang Paling Mendesak Dikerjakan
 
 1. Kalau butuh angka scratch CNN full test, jalankan `PYTHONPATH=src python3 scripts/evaluate_cnn_best.py` tanpa `--scratch-max-batches`, lalu rerun `PYTHONPATH=src python3 scripts/generate_cnn_report.py`.
-2. Masukkan dataset Flickr8k penuh ke `data/raw/flickr8k`.
-3. Jalankan feature extraction Flickr8k dan preprocessing caption.
-4. Train 12 decoder RNN/LSTM sampai selesai.
-5. Jalankan evaluasi captioning untuk Keras dan scratch, termasuk BLEU-4, METEOR, waktu eksekusi, dan variasi max caption length.
-6. Buat qualitative analysis 10 gambar dan kesimpulan RNN vs LSTM.
+2. Train 12 decoder RNN/LSTM sampai selesai.
+3. Jalankan evaluasi captioning untuk Keras dan scratch, termasuk BLEU-4, METEOR, waktu eksekusi, dan variasi max caption length.
+4. Buat qualitative analysis 10 gambar dan kesimpulan RNN vs LSTM.
