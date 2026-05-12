@@ -55,6 +55,16 @@ def make_padded_input(prefix_ids: list[int], max_caption_length: int, pad_id: in
     return sequence
 
 
+def make_padded_batch(prefixes: list[list[int]], max_caption_length: int, pad_id: int) -> np.ndarray:
+    if max_caption_length <= 0:
+        raise ValueError("max_caption_length must be positive")
+    sequences = np.full((len(prefixes), max_caption_length), pad_id, dtype=np.int32)
+    for index, prefix_ids in enumerate(prefixes):
+        clipped = prefix_ids[:max_caption_length]
+        sequences[index, : len(clipped)] = clipped
+    return sequences
+
+
 def greedy_decode(
     predict_probs: PredictProbsFn,
     image_feature: np.ndarray,
@@ -72,6 +82,44 @@ def greedy_decode(
             break
         generated.append(next_id)
         prefix.append(next_id)
+
+    return generated
+
+
+def greedy_decode_batch(
+    predict_probs: PredictProbsFn,
+    image_features: np.ndarray,
+    vocabulary: CaptionVocabulary,
+    max_caption_length: int,
+) -> list[list[int]]:
+    features = np.asarray(image_features, dtype=np.float32)
+    if features.ndim == 1:
+        features = features[np.newaxis, :]
+    if features.ndim != 2:
+        raise ValueError("image_features must have shape (batch, feature_dim)")
+
+    batch_size = features.shape[0]
+    prefixes = [[vocabulary.start_id] for _ in range(batch_size)]
+    generated: list[list[int]] = [[] for _ in range(batch_size)]
+    active = np.ones(batch_size, dtype=bool)
+
+    for position in range(max_caption_length):
+        if not np.any(active):
+            break
+
+        model_input = make_padded_batch(prefixes, max_caption_length, vocabulary.pad_id)
+        probabilities = predict_probs(features, model_input)
+        next_ids = np.argmax(probabilities[:, position, :], axis=-1).astype(np.int64)
+
+        for index, next_id in enumerate(next_ids):
+            if not active[index]:
+                continue
+            token_id = int(next_id)
+            if token_id == vocabulary.end_id:
+                active[index] = False
+                continue
+            generated[index].append(token_id)
+            prefixes[index].append(token_id)
 
     return generated
 

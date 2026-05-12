@@ -15,7 +15,7 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from tubes2_ml.captioning.decoding import greedy_decode, predict_with_keras_model, predict_with_scratch_captioner
+from tubes2_ml.captioning.decoding import greedy_decode_batch, predict_with_keras_model, predict_with_scratch_captioner
 from tubes2_ml.captioning.evaluate import evaluate_caption_predictions, group_reference_tokens
 from tubes2_ml.captioning.feature_extraction import feature_mapping
 from tubes2_ml.captioning.inference import infer_decoder_kind, infer_injection_mode, load_vocabulary
@@ -75,23 +75,26 @@ def generate_predictions(
     vocabulary,
     max_caption_length: int,
 ) -> dict[str, str]:
-    predictions: dict[str, str] = {}
     missing: list[str] = []
     for image_id in image_ids:
         if image_id not in features:
             missing.append(image_id)
-            continue
-        token_ids = greedy_decode(
-            predict_probs,
-            features[image_id],
-            vocabulary,
-            max_caption_length=max_caption_length,
-        )
-        predictions[image_id] = vocabulary.ids_to_caption(token_ids)
 
     if missing:
         preview = ", ".join(missing[:5])
         raise ValueError(f"Missing extracted features for {len(missing)} image ids. First missing ids: {preview}")
+
+    feature_batch = np.stack([features[image_id] for image_id in image_ids], axis=0)
+    batch_token_ids = greedy_decode_batch(
+        predict_probs,
+        feature_batch,
+        vocabulary,
+        max_caption_length=max_caption_length,
+    )
+    predictions = {
+        image_id: vocabulary.ids_to_caption(token_ids)
+        for image_id, token_ids in zip(image_ids, batch_token_ids)
+    }
     return predictions
 
 
