@@ -18,7 +18,7 @@ if str(SRC_DIR) not in sys.path:
 from tubes2_ml.captioning.decoding import greedy_decode, predict_with_keras_model, predict_with_scratch_captioner
 from tubes2_ml.captioning.evaluate import evaluate_caption_predictions, group_reference_tokens
 from tubes2_ml.captioning.feature_extraction import feature_mapping
-from tubes2_ml.captioning.inference import infer_decoder_kind, load_vocabulary
+from tubes2_ml.captioning.inference import infer_decoder_kind, infer_injection_mode, load_vocabulary
 from tubes2_ml.captioning.preprocessing import load_caption_records
 from tubes2_ml.captioning.train import load_processed_split
 from tubes2_ml.scratch.models.lstm_captioner import build_scratch_lstm_captioner_from_keras
@@ -111,11 +111,16 @@ def evaluate_one_model(
     rows: list[dict[str, Any]] = []
     predictors = {"keras": predict_with_keras_model(keras_model)}
     if "scratch" in backends:
-        predictors["scratch"] = scratch_predictor_from_keras_model(keras_model)
+        if infer_injection_mode(keras_model) == "pre":
+            predictors["scratch"] = scratch_predictor_from_keras_model(keras_model)
+        else:
+            print(f"Skipping scratch backend for init-inject model: {model_path.name}")
 
     for backend in backends:
         if backend not in predictors:
-            raise ValueError("backend must be 'keras' or 'scratch'")
+            if backend not in {"keras", "scratch"}:
+                raise ValueError("backend must be 'keras' or 'scratch'")
+            continue
         for max_caption_length in max_caption_lengths:
             start_time = time.perf_counter()
             predictions = generate_predictions(
@@ -173,9 +178,9 @@ def write_rows(rows: list[dict[str, Any]], output_csv: Path, output_json: Path) 
 
 
 def decoder_family(model_name: str) -> str:
-    if model_name.startswith("rnn_"):
+    if model_name.startswith("rnn_") or model_name.startswith("init_rnn_"):
         return "rnn"
-    if model_name.startswith("lstm_"):
+    if model_name.startswith("lstm_") or model_name.startswith("init_lstm_"):
         return "lstm"
     return "unknown"
 

@@ -51,11 +51,20 @@ def infer_decoder_kind(keras_model) -> DecoderKind:
     raise ValueError("Could not infer decoder kind from Keras model layer names")
 
 
+def infer_injection_mode(keras_model) -> str:
+    layer_names = {layer.name for layer in keras_model.layers}
+    if any(name.startswith("init_h_") for name in layer_names):
+        return "init"
+    return "pre"
+
+
 def build_predictor(keras_model, backend: Backend, decoder_kind: DecoderKind | None = None):
     if backend == "keras":
         return predict_with_keras_model(keras_model)
 
     decoder_kind = decoder_kind or infer_decoder_kind(keras_model)
+    if infer_injection_mode(keras_model) != "pre":
+        raise ValueError("Scratch captioner currently supports pre-inject models only")
     if decoder_kind == "rnn":
         return predict_with_scratch_captioner(build_scratch_rnn_captioner_from_keras(keras_model))
     if decoder_kind == "lstm":

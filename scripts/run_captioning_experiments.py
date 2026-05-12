@@ -13,7 +13,7 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from tubes2_ml.captioning.models import CaptionDecoderConfig, DecoderType  # noqa: E402
+from tubes2_ml.captioning.models import CaptionDecoderConfig, DecoderType, InjectionMode  # noqa: E402
 from tubes2_ml.captioning.train import (  # noqa: E402
     CaptionTrainingConfig,
     experiment_name,
@@ -60,6 +60,16 @@ def decoder_tuple(values: list[str] | tuple[str, ...] | None) -> tuple[DecoderTy
     return decoders  # type: ignore[return-value]
 
 
+def injection_tuple(values: list[str] | tuple[str, ...] | None) -> tuple[InjectionMode, ...]:
+    if values is None:
+        return ("pre",)
+    modes = tuple(str(value).lower() for value in values)
+    invalid = [value for value in modes if value not in {"pre", "init"}]
+    if invalid:
+        raise ValueError(f"Unsupported injection modes: {invalid}")
+    return modes  # type: ignore[return-value]
+
+
 def configs_from_yaml(path: str | Path) -> tuple[CaptionDecoderConfig, CaptionTrainingConfig, dict[str, tuple]]:
     data = load_yaml_config(path)
     model_data = data.get("model", {})
@@ -76,6 +86,7 @@ def configs_from_yaml(path: str | Path) -> tuple[CaptionDecoderConfig, CaptionTr
         dropout_rate=float(model_data.get("dropout_rate", 0.0)),
         learning_rate=float(model_data.get("learning_rate", 1e-3)),
         decoder_type=str(model_data.get("decoder_type", "lstm")).lower(),  # type: ignore[arg-type]
+        injection_mode=str(model_data.get("injection_mode", "pre")).lower(),  # type: ignore[arg-type]
         name=str(model_data.get("name", "caption_decoder")),
     )
     training_config = CaptionTrainingConfig(
@@ -89,6 +100,7 @@ def configs_from_yaml(path: str | Path) -> tuple[CaptionDecoderConfig, CaptionTr
     )
     grid = {
         "decoders": decoder_tuple(grid_data.get("decoders")),
+        "injection_modes": injection_tuple(grid_data.get("injection_modes")),
         "num_recurrent_layers": int_tuple(grid_data.get("num_recurrent_layers"), DEFAULT_LAYER_VARIANTS),
         "hidden_units": int_tuple(grid_data.get("hidden_units"), DEFAULT_HIDDEN_VARIANTS),
     }
@@ -98,12 +110,18 @@ def configs_from_yaml(path: str | Path) -> tuple[CaptionDecoderConfig, CaptionTr
 def generate_experiment_configs(
     base_config: CaptionDecoderConfig,
     decoders: tuple[DecoderType, ...] = DEFAULT_DECODERS,
+    injection_modes: tuple[InjectionMode, ...] = ("pre",),
     num_recurrent_layers: tuple[int, ...] = DEFAULT_LAYER_VARIANTS,
     hidden_units: tuple[int, ...] = DEFAULT_HIDDEN_VARIANTS,
 ) -> list[CaptionDecoderConfig]:
     configs: list[CaptionDecoderConfig] = []
-    for decoder_type, layer_count, hidden_size in product(decoders, num_recurrent_layers, hidden_units):
-        base = make_base_model_config(decoder_type, layer_count, hidden_size)
+    for decoder_type, injection_mode, layer_count, hidden_size in product(
+        decoders,
+        injection_modes,
+        num_recurrent_layers,
+        hidden_units,
+    ):
+        base = make_base_model_config(decoder_type, layer_count, hidden_size, injection_mode=injection_mode)
         configs.append(
             replace(
                 base,
