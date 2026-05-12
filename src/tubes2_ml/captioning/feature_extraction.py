@@ -7,6 +7,8 @@ from typing import Iterable, Literal
 
 import numpy as np
 
+from tubes2_ml.cnn.data import load_image_batch as load_cnn_image_batch
+
 EncoderName = Literal["inception_v3", "vgg16"]
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp"}
@@ -81,23 +83,13 @@ def load_image_batch(
     target_size: tuple[int, int],
     dtype: np.dtype = np.float32,
 ) -> np.ndarray:
-    from PIL import Image
-
-    height, width = target_size
-    if height <= 0 or width <= 0:
-        raise ValueError("target_size must contain positive integers")
-
-    arrays: list[np.ndarray] = []
-    for image_path in image_paths:
-        with Image.open(image_path) as image:
-            image = image.convert("RGB")
-            image = image.resize((width, height), Image.Resampling.BILINEAR)
-            arrays.append(np.asarray(image, dtype=dtype))
-
-    if not arrays:
-        return np.empty((0, height, width, 3), dtype=dtype)
-
-    return np.stack(arrays, axis=0)
+    return load_cnn_image_batch(
+        image_paths=image_paths,
+        target_size=target_size,
+        color_mode="rgb",
+        normalize=False,
+        dtype=dtype,
+    )
 
 
 def extract_flickr8k_features(config: FeatureExtractionConfig) -> FeatureExtractionResult:

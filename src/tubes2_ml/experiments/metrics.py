@@ -47,7 +47,7 @@ def collect_cnn_metrics(history_dir: str | Path) -> List[Dict[str, Any]]:
         return results
     
     for metadata_path in sorted(history_dir.glob("*.json")):
-        if metadata_path.name == "summary.json":
+        if metadata_path.name in {"summary.json", "best_model_evaluation.json"}:
             continue
         try:
             data = json.loads(metadata_path.read_text(encoding="utf-8"))

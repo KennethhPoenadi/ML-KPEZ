@@ -48,8 +48,8 @@ def _collect_captioning_experiments(predictions_dir: Path) -> List[Dict[str, Any
     if not predictions_dir.exists():
         return results
     
-    # Look for predictions JSON files
-    for pred_file in sorted(predictions_dir.glob("*.json")):
+    # Look for predictions JSON files, including artifacts/predictions/captioning.
+    for pred_file in sorted(predictions_dir.rglob("*.json")):
         try:
             data = json.loads(pred_file.read_text(encoding="utf-8"))
             
@@ -97,16 +97,16 @@ def _plot_cnn_histories(history_dir: Path, plots_dir: Path) -> int:
         return count
 
     for metadata_path in sorted(history_dir.glob("*.json")):
-        if metadata_path.name == "summary.json":
+        if metadata_path.name in {"summary.json", "best_model_evaluation.json"}:
             continue
         data = _load_json_metrics(metadata_path)
         if not data:
             continue
-        history = data.get("history")
+        history = data.get("history") if isinstance(data.get("history"), dict) else data
         if not isinstance(history, dict):
             continue
         plot_path = plots_dir / "cnn" / f"{metadata_path.stem}_history.png"
-        plot_history(history, title=metadata_path.stem, save_path=plot_path)
+        plot_history(history, metrics=["loss"], title=metadata_path.stem, save_path=plot_path)
         count += 1
     return count
 
