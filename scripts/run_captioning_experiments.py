@@ -13,9 +13,10 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from tubes2_ml.captioning.models import CaptionDecoderConfig, DecoderType  # noqa: E402
+from tubes2_ml.captioning.models import CaptionDecoderConfig, DecoderType, InjectionMode  # noqa: E402
 from tubes2_ml.captioning.train import (  # noqa: E402
     CaptionTrainingConfig,
+    experiment_name,
     make_base_model_config,
     train_caption_decoder,
 )
@@ -59,6 +60,16 @@ def decoder_tuple(values: list[str] | tuple[str, ...] | None) -> tuple[DecoderTy
     return decoders  # type: ignore[return-value]
 
 
+def injection_tuple(values: list[str] | tuple[str, ...] | None) -> tuple[InjectionMode, ...]:
+    if values is None:
+        return ("pre",)
+    modes = tuple(str(value).lower() for value in values)
+    invalid = [value for value in modes if value not in {"pre", "init"}]
+    if invalid:
+        raise ValueError(f"Unsupported injection modes: {invalid}")
+    return modes  # type: ignore[return-value]
+
+
 def configs_from_yaml(path: str | Path) -> tuple[CaptionDecoderConfig, CaptionTrainingConfig, dict[str, tuple]]:
     data = load_yaml_config(path)
     model_data = data.get("model", {})
@@ -75,6 +86,7 @@ def configs_from_yaml(path: str | Path) -> tuple[CaptionDecoderConfig, CaptionTr
         dropout_rate=float(model_data.get("dropout_rate", 0.0)),
         learning_rate=float(model_data.get("learning_rate", 1e-3)),
         decoder_type=str(model_data.get("decoder_type", "lstm")).lower(),  # type: ignore[arg-type]
+        injection_mode=str(model_data.get("injection_mode", "pre")).lower(),  # type: ignore[arg-type]
         name=str(model_data.get("name", "caption_decoder")),
     )
     training_config = CaptionTrainingConfig(
@@ -88,6 +100,7 @@ def configs_from_yaml(path: str | Path) -> tuple[CaptionDecoderConfig, CaptionTr
     )
     grid = {
         "decoders": decoder_tuple(grid_data.get("decoders")),
+        "injection_modes": injection_tuple(grid_data.get("injection_modes")),
         "num_recurrent_layers": int_tuple(grid_data.get("num_recurrent_layers"), DEFAULT_LAYER_VARIANTS),
         "hidden_units": int_tuple(grid_data.get("hidden_units"), DEFAULT_HIDDEN_VARIANTS),
     }
@@ -97,12 +110,18 @@ def configs_from_yaml(path: str | Path) -> tuple[CaptionDecoderConfig, CaptionTr
 def generate_experiment_configs(
     base_config: CaptionDecoderConfig,
     decoders: tuple[DecoderType, ...] = DEFAULT_DECODERS,
+    injection_modes: tuple[InjectionMode, ...] = ("pre",),
     num_recurrent_layers: tuple[int, ...] = DEFAULT_LAYER_VARIANTS,
     hidden_units: tuple[int, ...] = DEFAULT_HIDDEN_VARIANTS,
 ) -> list[CaptionDecoderConfig]:
     configs: list[CaptionDecoderConfig] = []
-    for decoder_type, layer_count, hidden_size in product(decoders, num_recurrent_layers, hidden_units):
-        base = make_base_model_config(decoder_type, layer_count, hidden_size)
+    for decoder_type, injection_mode, layer_count, hidden_size in product(
+        decoders,
+        injection_modes,
+        num_recurrent_layers,
+        hidden_units,
+    ):
+        base = make_base_model_config(decoder_type, layer_count, hidden_size, injection_mode=injection_mode)
         configs.append(
             replace(
                 base,
@@ -114,12 +133,47 @@ def generate_experiment_configs(
     return configs
 
 
+def _jsonable_dataclass(value: Any) -> dict[str, Any]:
+    return json.loads(json.dumps(asdict(value), default=str))
+
+
+def _metadata_matches(
+    metadata_path: Path,
+    model_config: CaptionDecoderConfig,
+    training_config: CaptionTrainingConfig,
+) -> bool:
+    if not metadata_path.exists():
+        return False
+
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata_model_config = dict(metadata.get("model_config", {}))
+    expected_model_config = _jsonable_dataclass(model_config)
+    metadata_training_config = dict(metadata.get("training_config", {}))
+    expected_training_config = _jsonable_dataclass(training_config)
+
+    for ignored_key in ("vocab_size", "feature_dim", "max_caption_length", "name"):
+        metadata_model_config.pop(ignored_key, None)
+        expected_model_config.pop(ignored_key, None)
+
+    return metadata_model_config == expected_model_config and metadata_training_config == expected_training_config
+
+
 def run_grid(
     model_configs: list[CaptionDecoderConfig],
     training_config: CaptionTrainingConfig,
+    skip_completed: bool = True,
 ) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
+    history_dir = Path(training_config.history_dir)
+
     for model_config in model_configs:
+        metadata_path = history_dir / f"{experiment_name(model_config)}_metadata.json"
+        if skip_completed and _metadata_matches(metadata_path, model_config, training_config):
+            print(f"Skipping completed experiment: {model_config.name}")
+            continue
+        if metadata_path.exists():
+            print(f"Re-running experiment with updated config: {model_config.name}")
+
         result = train_caption_decoder(model_config, training_config)
         results.append(asdict(result))
     return results
@@ -129,6 +183,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run RNN/LSTM captioning experiments.")
     parser.add_argument("--config", default="configs/captioning/hparam_grid.yaml")
     parser.add_argument("--dry-run", action="store_true", help="Print the 12 experiment configs without training.")
+    parser.add_argument(
+        "--rerun-completed",
+        action="store_true",
+        help="Train experiments even when matching metadata already exists.",
+    )
     return parser.parse_args()
 
 
@@ -149,7 +208,7 @@ def main() -> None:
         print(json.dumps(payload, indent=2))
         return
 
-    results = run_grid(experiment_configs, training_config)
+    results = run_grid(experiment_configs, training_config, skip_completed=not args.rerun_completed)
     print(json.dumps(results, indent=2, default=str))
 
 

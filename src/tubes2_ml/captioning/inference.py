@@ -17,6 +17,7 @@ from tubes2_ml.captioning.decoding import (
     CaptionVocabulary,
     beam_search_decode,
     greedy_decode,
+    greedy_decode_batch,
     predict_with_keras_model,
     predict_with_scratch_captioner,
 )
@@ -51,11 +52,20 @@ def infer_decoder_kind(keras_model) -> DecoderKind:
     raise ValueError("Could not infer decoder kind from Keras model layer names")
 
 
+def infer_injection_mode(keras_model) -> str:
+    layer_names = {layer.name for layer in keras_model.layers}
+    if any(name.startswith("init_h_") for name in layer_names):
+        return "init"
+    return "pre"
+
+
 def build_predictor(keras_model, backend: Backend, decoder_kind: DecoderKind | None = None):
     if backend == "keras":
         return predict_with_keras_model(keras_model)
 
     decoder_kind = decoder_kind or infer_decoder_kind(keras_model)
+    if infer_injection_mode(keras_model) != "pre":
+        raise ValueError("Scratch captioner currently supports pre-inject models only")
     if decoder_kind == "rnn":
         return predict_with_scratch_captioner(build_scratch_rnn_captioner_from_keras(keras_model))
     if decoder_kind == "lstm":
@@ -181,6 +191,79 @@ def generate_caption_from_image(
     }
 
 
+def generate_captions(
+    model_path: str | Path,
+    vocabulary_path: str | Path,
+    features_dir: str | Path,
+    image_ids: list[str],
+    max_caption_length: int,
+    backend: Backend = "keras",
+    search: SearchStrategy = "greedy",
+    beam_width: int = 3,
+    decoder_kind: DecoderKind | None = None,
+) -> list[dict[str, object]]:
+    import tensorflow as tf
+
+    if not image_ids:
+        raise ValueError("image_ids must not be empty")
+
+    vocabulary = load_vocabulary(vocabulary_path)
+    features = feature_mapping(features_dir)
+    missing = [image_id for image_id in image_ids if image_id not in features]
+    if missing:
+        preview = ", ".join(missing[:5])
+        raise KeyError(f"Image ids not found in extracted features: {preview}")
+
+    keras_model = tf.keras.models.load_model(model_path)
+    predict_probs = build_predictor(keras_model, backend=backend, decoder_kind=decoder_kind)
+
+    if search == "greedy":
+        feature_batch = np.stack([features[image_id] for image_id in image_ids], axis=0)
+        batch_token_ids = greedy_decode_batch(
+            predict_probs,
+            feature_batch,
+            vocabulary,
+            max_caption_length=max_caption_length,
+        )
+    elif search == "beam":
+        batch_token_ids = [
+            beam_search_decode(
+                predict_probs,
+                features[image_id],
+                vocabulary,
+                max_caption_length=max_caption_length,
+                beam_width=beam_width,
+            )
+            for image_id in image_ids
+        ]
+    else:
+        raise ValueError("search must be either 'greedy' or 'beam'")
+
+    return [
+        {
+            "image_id": image_id,
+            "caption": vocabulary.ids_to_caption(token_ids),
+            "token_ids": token_ids,
+            "backend": backend,
+            "search": search,
+            "beam_width": beam_width if search == "beam" else None,
+        }
+        for image_id, token_ids in zip(image_ids, batch_token_ids)
+    ]
+
+
+def parse_image_ids(args: argparse.Namespace) -> list[str]:
+    image_ids: list[str] = []
+    if args.image_id:
+        image_ids.append(args.image_id)
+    if args.image_ids:
+        image_ids.extend(part.strip() for part in args.image_ids.split(",") if part.strip())
+    if args.image_ids_file:
+        path = Path(args.image_ids_file)
+        image_ids.extend(line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
+    return image_ids
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate image captions with a trained RNN/LSTM decoder.")
     parser.add_argument("--model-path", required=True)
@@ -189,6 +272,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--image-id", default=None, help="Use a pre-extracted feature by image id.")
     parser.add_argument("--image-path", default=None, help="Run the frozen CNN encoder on a raw image first.")
     parser.add_argument("--encoder", choices=("inception_v3", "vgg16"), default="inception_v3")
+    parser.add_argument("--image-ids", default=None, help="Comma-separated image ids for batch inference.")
+    parser.add_argument("--image-ids-file", default=None, help="Text file with one image id per line.")
     parser.add_argument("--max-caption-length", type=int, default=38)
     parser.add_argument("--backend", choices=("keras", "scratch"), default="keras")
     parser.add_argument("--decoder-kind", choices=("rnn", "lstm"), default=None)
@@ -211,21 +296,28 @@ def main() -> None:
             beam_width=args.beam_width,
             decoder_kind=args.decoder_kind,
         )
-    elif args.image_id:
-        result = generate_caption(
+        print(json.dumps(result, indent=2))
+        return
+
+    image_ids = parse_image_ids(args)
+    if image_ids:
+        results = generate_captions(
             model_path=args.model_path,
             vocabulary_path=args.vocabulary_path,
             features_dir=args.features_dir,
-            image_id=args.image_id,
+            image_ids=image_ids,
             max_caption_length=args.max_caption_length,
             backend=args.backend,
             search=args.search,
             beam_width=args.beam_width,
             decoder_kind=args.decoder_kind,
         )
+        payload: object = results[0] if len(results) == 1 else results
+        print(json.dumps(payload, indent=2))
+        return
+
     else:
-        raise ValueError("Provide either --image-id for cached features or --image-path for raw image inference.")
-    print(json.dumps(result, indent=2))
+        raise ValueError("Provide --image-path, --image-id, --image-ids, or --image-ids-file")
 
 
 if __name__ == "__main__":

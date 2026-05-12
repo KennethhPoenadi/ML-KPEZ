@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 
 from tubes2_ml.captioning.feature_extraction import load_extracted_features
-from tubes2_ml.captioning.models import CaptionDecoderConfig, DecoderType, build_preinject_decoder
+from tubes2_ml.captioning.models import CaptionDecoderConfig, DecoderType, InjectionMode, build_caption_decoder
 
 
 @dataclass(frozen=True)
@@ -27,6 +27,7 @@ class CaptionTrainingResult:
     history_path: Path
     metadata_path: Path
     decoder_type: str
+    injection_mode: str
     num_recurrent_layers: int
     hidden_units: int
     best_validation_loss: float
@@ -79,7 +80,8 @@ def make_tf_dataset(
 
 
 def experiment_name(config: CaptionDecoderConfig) -> str:
-    return f"{config.decoder_type}_layers{config.num_recurrent_layers}_hidden{config.hidden_units}"
+    prefix = "" if config.injection_mode == "pre" else f"{config.injection_mode}_"
+    return f"{prefix}{config.decoder_type}_layers{config.num_recurrent_layers}_hidden{config.hidden_units}"
 
 
 def train_caption_decoder(
@@ -111,9 +113,10 @@ def train_caption_decoder(
         dropout_rate=model_config.dropout_rate,
         learning_rate=model_config.learning_rate,
         decoder_type=model_config.decoder_type,
+        injection_mode=model_config.injection_mode,
         name=model_config.name,
     )
-    model = build_preinject_decoder(inferred_config)
+    model = build_caption_decoder(inferred_config)
 
     train_dataset = make_tf_dataset(
         train_features,
@@ -182,19 +185,27 @@ def train_caption_decoder(
         history_path=history_path,
         metadata_path=metadata_path,
         decoder_type=inferred_config.decoder_type,
+        injection_mode=inferred_config.injection_mode,
         num_recurrent_layers=inferred_config.num_recurrent_layers,
         hidden_units=inferred_config.hidden_units,
         best_validation_loss=float(best_validation_loss),
     )
 
 
-def make_base_model_config(decoder_type: DecoderType, num_recurrent_layers: int, hidden_units: int) -> CaptionDecoderConfig:
+def make_base_model_config(
+    decoder_type: DecoderType,
+    num_recurrent_layers: int,
+    hidden_units: int,
+    injection_mode: InjectionMode = "pre",
+) -> CaptionDecoderConfig:
+    prefix = "" if injection_mode == "pre" else f"{injection_mode}_"
     return CaptionDecoderConfig(
         vocab_size=1,
         feature_dim=1,
         max_caption_length=1,
         decoder_type=decoder_type,
+        injection_mode=injection_mode,
         num_recurrent_layers=num_recurrent_layers,
         hidden_units=hidden_units,
-        name=f"{decoder_type}_layers{num_recurrent_layers}_hidden{hidden_units}",
+        name=f"{prefix}{decoder_type}_layers{num_recurrent_layers}_hidden{hidden_units}",
     )

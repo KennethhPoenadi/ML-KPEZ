@@ -17,7 +17,7 @@ grid:
     - rnn
     - lstm
   injection_modes:
-    - pre
+    - init
   num_recurrent_layers:
     - 1
     - 2
