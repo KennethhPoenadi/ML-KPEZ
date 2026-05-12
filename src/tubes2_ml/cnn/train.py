@@ -8,6 +8,8 @@ import tensorflow as tf
 from tubes2_ml.cnn.models import SharedConvCNNConfig, build_shared_conv_cnn
 from tubes2_ml.evaluation.cnn_metrics import macro_f1_score
 
+_TENSORFLOW_RUNTIME_CONFIGURED = False
+
 @dataclass(frozen=True)
 class CNNTrainingConfig:
     train_dir: str | Path = "data/raw/intel_image_classification/seg_train/seg_train"  # intel train folder
@@ -16,11 +18,34 @@ class CNNTrainingConfig:
     history_dir: str | Path = "artifacts/experiments/cnn"  # training logs and metadata
     image_size: tuple[int, int] = (96, 96)  # image resize target as (height, width)
     batch_size: int = 64  # number of images per training batch
-    epochs: int = 5  # number of full passes over the training set
+    epochs: int = 20  # number of full passes over the training set
     validation_split: float = 0.2  # fraction of train_dir used for validation
     seed: int = 42
     save_format: str = "keras"  # save full model as .keras when enabled
-    early_stopping_patience: int | None = 1
+    early_stopping_patience: int | None = None
+
+def configure_tensorflow_runtime() -> dict[str, Any]:
+    global _TENSORFLOW_RUNTIME_CONFIGURED
+
+    devices = {
+        "gpus": [device.name for device in tf.config.list_physical_devices("GPU")],
+        "cpus": [device.name for device in tf.config.list_physical_devices("CPU")],
+    }
+
+    if not _TENSORFLOW_RUNTIME_CONFIGURED:
+        for gpu in tf.config.list_physical_devices("GPU"):
+            try:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            except RuntimeError:
+                pass
+        _TENSORFLOW_RUNTIME_CONFIGURED = True
+
+    if devices["gpus"]:
+        print(f"TensorFlow GPU available: {', '.join(devices['gpus'])}")
+    else:
+        print("TensorFlow GPU not detected; training will use CPU.")
+
+    return devices
 
 def _make_dataset_from_directory(directory: str | Path,image_size: tuple[int, int],batch_size: int,seed: int,subset: str | None = None,validation_split: float | None = None,shuffle: bool = True):
     kwargs: dict[str, Any] = {
@@ -98,6 +123,7 @@ def _jsonable_history(history: dict[str, list[Any]]) -> dict[str, list[float]]:
 
 def train_shared_conv_cnn(model_config: SharedConvCNNConfig,training_config: CNNTrainingConfig,callbacks: list[Any] | None = None):
 
+    runtime_devices = configure_tensorflow_runtime()
     train_ds, val_ds, class_names = build_intel_datasets(training_config)
 
     output_dir = Path(training_config.output_dir)
@@ -154,6 +180,7 @@ def train_shared_conv_cnn(model_config: SharedConvCNNConfig,training_config: CNN
         "metrics": {
             "validation_macro_f1": val_macro_f1,
         },
+        "runtime": runtime_devices,
         "artifacts": {
             "weights_path": str(weights_path),
             "model_path": str(model_path) if training_config.save_format == "keras" else None,

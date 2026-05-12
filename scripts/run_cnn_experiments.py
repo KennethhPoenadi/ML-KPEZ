@@ -1,6 +1,7 @@
 from __future__ import annotations
 import argparse
-from dataclasses import replace
+import json
+from dataclasses import asdict, replace
 from itertools import product
 from pathlib import Path
 from typing import Any
@@ -92,10 +93,10 @@ def config_from_yaml(path: str | Path) -> tuple[SharedConvCNNConfig, CNNTraining
         history_dir=resolve_project_path(project_root, training_data.get("history_dir", "artifacts/experiments/cnn")),
         image_size=tuple(training_data.get("image_size", (96, 96))),
         batch_size=int(training_data.get("batch_size", 64)),
-        epochs=int(training_data.get("epochs", 5)),
+        epochs=int(training_data.get("epochs", 20)),
         validation_split=float(training_data.get("validation_split", 0.2)),
         seed=int(training_data.get("seed", 42)),
-        early_stopping_patience=optional_int_from_config(training_data.get("early_stopping_patience", 1)),
+        early_stopping_patience=optional_int_from_config(training_data.get("early_stopping_patience")),
     )
     return model_config, training_config
 
@@ -108,6 +109,19 @@ def resolve_optional_project_path(project_root: Path, path: str | Path | None) -
         return None
     return resolve_project_path(project_root, path)
 
+def _jsonable_dataclass(value: Any) -> dict[str, Any]:
+    return json.loads(json.dumps(asdict(value), default=str))
+
+def _same_training_run(metadata_path: Path, model_config: SharedConvCNNConfig, training_config: CNNTrainingConfig) -> bool:
+    if not metadata_path.exists():
+        return False
+
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    return (
+        metadata.get("model_config") == _jsonable_dataclass(model_config)
+        and metadata.get("training_config") == _jsonable_dataclass(training_config)
+    )
+
 def run_grid(
     model_config: SharedConvCNNConfig,
     training_config: CNNTrainingConfig,
@@ -117,9 +131,12 @@ def run_grid(
 
     for experiment_config in generate_shared_conv_grid(model_config):
         metadata_path = history_dir / f"{experiment_config.name}.json"
-        if skip_completed and metadata_path.exists():
+        if skip_completed and _same_training_run(metadata_path, experiment_config, training_config):
             print(f"Skipping completed experiment: {experiment_config.name}")
             continue
+
+        if metadata_path.exists():
+            print(f"Re-running experiment with updated config: {experiment_config.name}")
 
         train_shared_conv_cnn(experiment_config, training_config)
 
