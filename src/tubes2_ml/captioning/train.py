@@ -10,6 +10,12 @@ from tubes2_ml.captioning.feature_extraction import load_extracted_features
 from tubes2_ml.captioning.models import CaptionDecoderConfig, DecoderType, InjectionMode, build_caption_decoder
 
 
+def architecture_version(injection_mode: str) -> str:
+    if injection_mode == "init":
+        return "post_recurrent_concat_v1"
+    return "preinject_v1"
+
+
 @dataclass(frozen=True)
 class CaptionTrainingConfig:
     processed_dir: Path = Path("data/processed/captioning")
@@ -168,6 +174,7 @@ def train_caption_decoder(
     best_validation_loss = min(validation_losses) if validation_losses else float("nan")
     metadata = {
         "model_config": asdict(inferred_config),
+        "architecture_version": architecture_version(inferred_config.injection_mode),
         "training_config": {
             key: str(value) if isinstance(value, Path) else value
             for key, value in asdict(training_config).items()

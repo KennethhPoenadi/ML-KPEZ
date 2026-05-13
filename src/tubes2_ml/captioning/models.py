@@ -96,23 +96,24 @@ def build_initinject_decoder(config: CaptionDecoderConfig):
         raise ValueError("decoder_type must be either 'rnn' or 'lstm'")
 
     for layer_index in range(config.num_recurrent_layers):
-        h0 = tf.keras.layers.Dense(config.hidden_units, activation="tanh", name=f"init_h_{layer_index + 1}")(
-            feature_input
-        )
-        if config.decoder_type == "lstm":
-            c0 = tf.keras.layers.Dense(config.hidden_units, activation="tanh", name=f"init_c_{layer_index + 1}")(
-                feature_input
-            )
-            initial_state = [h0, c0]
-        else:
-            initial_state = [h0]
-
         x = recurrent_cls(
             config.hidden_units,
             return_sequences=True,
             dropout=config.dropout_rate,
             name=f"{config.decoder_type}_{layer_index + 1}",
-        )(x, initial_state=initial_state)
+        )(x)
+
+    feature_context = tf.keras.layers.Dense(
+        config.hidden_units,
+        activation="tanh",
+        name="init_feature_projection",
+    )(feature_input)
+    feature_context = tf.keras.layers.RepeatVector(
+        config.max_caption_length,
+        name="init_feature_repeat",
+    )(feature_context)
+    x = tf.keras.layers.Concatenate(axis=-1, name="init_context_concat")([x, feature_context])
+    x = tf.keras.layers.Dense(config.hidden_units, activation="tanh", name="init_context_fusion")(x)
 
     logits = tf.keras.layers.Dense(config.vocab_size, name="word_logits")(x)
     outputs = tf.keras.layers.Activation("softmax", name="word_softmax")(logits)

@@ -28,6 +28,14 @@ class ScratchCNNClassifier:
         probabilities = self.forward(x)
         return np.argmax(probabilities, axis=-1)
 
+    def backward(self, grad_output: np.ndarray) -> np.ndarray:
+        grad = np.asarray(grad_output, dtype=np.float32)
+        for layer in reversed(self.layers):
+            if not hasattr(layer, "backward"):
+                raise ValueError(f"Layer {layer.__class__.__name__} does not implement backward")
+            grad = layer.backward(grad)
+        return grad
+
     def count_parameters(self) -> int:
         total = 0
         for layer in self.layers:

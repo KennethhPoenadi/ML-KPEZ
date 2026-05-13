@@ -1,6 +1,6 @@
 from __future__ import annotations
 import numpy as np
-from tubes2_ml.scratch.layers.activations import get_activation
+from tubes2_ml.scratch.layers.activations import activation_backward, get_activation
 
 def _to_pair(value: int | tuple[int, int]) -> tuple[int, int]:
     if isinstance(value, tuple):
@@ -82,4 +82,50 @@ class Conv2D:
         if self.bias is not None:
             output += self.bias.reshape(1, 1, 1, output_channels)
 
+        self._cache = {
+            "input_shape": x.shape,
+            "padded": padded,
+            "padding": (pad_top, pad_bottom, pad_left, pad_right),
+            "pre_activation": output,
+        }
         return self.activation(output)
+
+    def backward(self, grad_output: np.ndarray) -> np.ndarray:
+        if self.kernel is None:
+            raise ValueError("Conv2D kernel is not loaded")
+        if not hasattr(self, "_cache"):
+            raise ValueError("Conv2D backward called before forward")
+
+        grad = activation_backward(
+            self.activation_name,
+            self._cache["pre_activation"],
+            np.asarray(grad_output, dtype=np.float32),
+        )
+        padded = self._cache["padded"]
+        pad_top, pad_bottom, pad_left, pad_right = self._cache["padding"]
+        kernel_height, kernel_width, _, _ = self.kernel.shape
+        _, output_height, output_width, _ = grad.shape
+        stride_h, stride_w = self.strides
+
+        self.grad_kernel = np.zeros_like(self.kernel)
+        self.grad_bias = np.sum(grad, axis=(0, 1, 2)) if self.bias is not None else None
+        grad_padded = np.zeros_like(padded)
+
+        for row in range(output_height):
+            row_start = row * stride_h
+            row_end = row_start + kernel_height
+            for col in range(output_width):
+                col_start = col * stride_w
+                col_end = col_start + kernel_width
+                patch = padded[:, row_start:row_end, col_start:col_end, :]
+                grad_position = grad[:, row, col, :]
+                self.grad_kernel += np.tensordot(patch, grad_position, axes=([0], [0]))
+                grad_padded[:, row_start:row_end, col_start:col_end, :] += np.tensordot(
+                    grad_position,
+                    self.kernel,
+                    axes=([1], [3]),
+                )
+
+        row_slice = slice(pad_top, grad_padded.shape[1] - pad_bottom if pad_bottom else None)
+        col_slice = slice(pad_left, grad_padded.shape[2] - pad_right if pad_right else None)
+        return grad_padded[:, row_slice, col_slice, :].reshape(self._cache["input_shape"])

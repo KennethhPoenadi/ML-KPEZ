@@ -16,6 +16,7 @@ if str(SRC_DIR) not in sys.path:
 from tubes2_ml.captioning.models import CaptionDecoderConfig, DecoderType, InjectionMode  # noqa: E402
 from tubes2_ml.captioning.train import (  # noqa: E402
     CaptionTrainingConfig,
+    architecture_version,
     experiment_name,
     make_base_model_config,
     train_caption_decoder,
@@ -155,7 +156,17 @@ def _metadata_matches(
         metadata_model_config.pop(ignored_key, None)
         expected_model_config.pop(ignored_key, None)
 
-    return metadata_model_config == expected_model_config and metadata_training_config == expected_training_config
+    expected_architecture_version = architecture_version(model_config.injection_mode)
+    metadata_architecture_version = metadata.get("architecture_version")
+    version_matches = metadata_architecture_version == expected_architecture_version or (
+        metadata_architecture_version is None and model_config.injection_mode == "pre"
+    )
+
+    return (
+        metadata_model_config == expected_model_config
+        and metadata_training_config == expected_training_config
+        and version_matches
+    )
 
 
 def run_grid(

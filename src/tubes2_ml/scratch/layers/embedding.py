@@ -19,4 +19,15 @@ class Embedding:
         ids = np.asarray(token_ids, dtype=np.int64)
         if np.any(ids < 0) or np.any(ids >= self.weights.shape[0]):
             raise ValueError("Token id out of embedding vocabulary range")
+        self._ids = ids
         return self.weights[ids]
+
+    def backward(self, grad_output: np.ndarray) -> None:
+        if self.weights is None:
+            raise ValueError("Embedding weights are not loaded")
+        if not hasattr(self, "_ids"):
+            raise ValueError("Embedding backward called before forward")
+
+        self.grad_weights = np.zeros_like(self.weights)
+        np.add.at(self.grad_weights, self._ids, np.asarray(grad_output, dtype=np.float32))
+        return None

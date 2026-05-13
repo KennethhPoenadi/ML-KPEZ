@@ -15,10 +15,15 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from tubes2_ml.captioning.decoding import greedy_decode_batch, predict_with_keras_model, predict_with_scratch_captioner
+from tubes2_ml.captioning.decoding import (
+    beam_search_decode,
+    greedy_decode_batch,
+    predict_with_keras_model,
+    predict_with_scratch_captioner,
+)
 from tubes2_ml.captioning.evaluate import evaluate_caption_predictions, group_reference_tokens
 from tubes2_ml.captioning.feature_extraction import feature_mapping
-from tubes2_ml.captioning.inference import infer_decoder_kind, infer_injection_mode, load_vocabulary
+from tubes2_ml.captioning.inference import infer_decoder_kind, load_vocabulary
 from tubes2_ml.captioning.preprocessing import load_caption_records
 from tubes2_ml.captioning.train import load_processed_split
 from tubes2_ml.scratch.models.lstm_captioner import build_scratch_lstm_captioner_from_keras
@@ -50,6 +55,21 @@ def parse_max_lengths(value: str | None, default_length: int) -> list[int]:
     return lengths
 
 
+def parse_csv_values(value: str, allowed: set[str], label: str) -> list[str]:
+    values = [part.strip() for part in value.split(",") if part.strip()]
+    invalid = [part for part in values if part not in allowed]
+    if invalid:
+        raise ValueError(f"{label} must use values from {sorted(allowed)}. Invalid: {invalid}")
+    return values
+
+
+def parse_beam_widths(value: str) -> list[int]:
+    widths = [int(part.strip()) for part in value.split(",") if part.strip()]
+    if not widths or any(width <= 0 for width in widths):
+        raise ValueError("beam widths must be positive integers")
+    return widths
+
+
 def discover_model_paths(models_dir: str | Path) -> list[Path]:
     directory = Path(models_dir)
     if not directory.is_dir():
@@ -74,7 +94,12 @@ def generate_predictions(
     features: dict[str, np.ndarray],
     vocabulary,
     max_caption_length: int,
+    search: str = "greedy",
+    beam_width: int = 3,
+    batch_size: int = 64,
 ) -> dict[str, str]:
+    if batch_size <= 0:
+        raise ValueError("batch_size must be positive")
     missing: list[str] = []
     for image_id in image_ids:
         if image_id not in features:
@@ -84,13 +109,33 @@ def generate_predictions(
         preview = ", ".join(missing[:5])
         raise ValueError(f"Missing extracted features for {len(missing)} image ids. First missing ids: {preview}")
 
-    feature_batch = np.stack([features[image_id] for image_id in image_ids], axis=0)
-    batch_token_ids = greedy_decode_batch(
-        predict_probs,
-        feature_batch,
-        vocabulary,
-        max_caption_length=max_caption_length,
-    )
+    if search == "greedy":
+        batch_token_ids = []
+        for start in range(0, len(image_ids), batch_size):
+            batch_ids = image_ids[start : start + batch_size]
+            feature_batch = np.stack([features[image_id] for image_id in batch_ids], axis=0)
+            batch_token_ids.extend(
+                greedy_decode_batch(
+                    predict_probs,
+                    feature_batch,
+                    vocabulary,
+                    max_caption_length=max_caption_length,
+                )
+            )
+    elif search == "beam":
+        batch_token_ids = [
+            beam_search_decode(
+                predict_probs,
+                features[image_id],
+                vocabulary,
+                max_caption_length=max_caption_length,
+                beam_width=beam_width,
+            )
+            for image_id in image_ids
+        ]
+    else:
+        raise ValueError("search must be either 'greedy' or 'beam'")
+
     predictions = {
         image_id: vocabulary.ids_to_caption(token_ids)
         for image_id, token_ids in zip(image_ids, batch_token_ids)
@@ -106,6 +151,9 @@ def evaluate_one_model(
     vocabulary,
     references: dict[str, list[list[str]]],
     max_caption_lengths: list[int],
+    searches: list[str],
+    beam_widths: list[int],
+    batch_size: int,
     predictions_dir: Path,
 ) -> list[dict[str, Any]]:
     import tensorflow as tf
@@ -114,10 +162,7 @@ def evaluate_one_model(
     rows: list[dict[str, Any]] = []
     predictors = {"keras": predict_with_keras_model(keras_model)}
     if "scratch" in backends:
-        if infer_injection_mode(keras_model) == "pre":
-            predictors["scratch"] = scratch_predictor_from_keras_model(keras_model)
-        else:
-            print(f"Skipping scratch backend for init-inject model: {model_path.name}")
+        predictors["scratch"] = scratch_predictor_from_keras_model(keras_model)
 
     for backend in backends:
         if backend not in predictors:
@@ -125,42 +170,54 @@ def evaluate_one_model(
                 raise ValueError("backend must be 'keras' or 'scratch'")
             continue
         for max_caption_length in max_caption_lengths:
-            start_time = time.perf_counter()
-            predictions = generate_predictions(
-                predictors[backend],
-                image_ids=image_ids,
-                features=features,
-                vocabulary=vocabulary,
-                max_caption_length=max_caption_length,
-            )
-            elapsed_seconds = time.perf_counter() - start_time
-            metrics = evaluate_caption_predictions(predictions, references)
+            for search in searches:
+                active_beam_widths = beam_widths if search == "beam" else [0]
+                for beam_width in active_beam_widths:
+                    start_time = time.perf_counter()
+                    predictions = generate_predictions(
+                        predictors[backend],
+                        image_ids=image_ids,
+                        features=features,
+                        vocabulary=vocabulary,
+                        max_caption_length=max_caption_length,
+                        search=search,
+                        beam_width=beam_width,
+                        batch_size=batch_size,
+                    )
+                    elapsed_seconds = time.perf_counter() - start_time
+                    metrics = evaluate_caption_predictions(predictions, references)
 
-            predictions_dir.mkdir(parents=True, exist_ok=True)
-            predictions_path = predictions_dir / f"{model_path.stem}_{backend}_maxlen{max_caption_length}.json"
-            predictions_payload = [
-                {
-                    "image_id": image_id,
-                    "caption": predictions[image_id],
-                    "references": [" ".join(tokens) for tokens in references.get(image_id, [])],
-                }
-                for image_id in image_ids
-            ]
-            predictions_path.write_text(json.dumps(predictions_payload, indent=2), encoding="utf-8")
+                    predictions_dir.mkdir(parents=True, exist_ok=True)
+                    search_suffix = search if search == "greedy" else f"beam{beam_width}"
+                    predictions_path = (
+                        predictions_dir / f"{model_path.stem}_{backend}_{search_suffix}_maxlen{max_caption_length}.json"
+                    )
+                    predictions_payload = [
+                        {
+                            "image_id": image_id,
+                            "caption": predictions[image_id],
+                            "references": [" ".join(tokens) for tokens in references.get(image_id, [])],
+                        }
+                        for image_id in image_ids
+                    ]
+                    predictions_path.write_text(json.dumps(predictions_payload, indent=2), encoding="utf-8")
 
-            rows.append(
-                {
-                    "model": model_path.stem,
-                    "backend": backend,
-                    "max_caption_length": max_caption_length,
-                    "bleu4": metrics["bleu4"],
-                    "meteor": metrics["meteor"],
-                    "num_predictions": int(metrics["num_predictions"]),
-                    "execution_time_seconds": elapsed_seconds,
-                    "seconds_per_image": elapsed_seconds / max(1, len(image_ids)),
-                    "predictions_path": str(predictions_path),
-                }
-            )
+                    rows.append(
+                        {
+                            "model": model_path.stem,
+                            "backend": backend,
+                            "search": search,
+                            "beam_width": None if search == "greedy" else beam_width,
+                            "max_caption_length": max_caption_length,
+                            "bleu4": metrics["bleu4"],
+                            "meteor": metrics["meteor"],
+                            "num_predictions": int(metrics["num_predictions"]),
+                            "batch_size": batch_size,
+                            "execution_time_seconds": elapsed_seconds,
+                            "seconds_per_image": elapsed_seconds / max(1, len(image_ids)),
+                            "predictions_path": str(predictions_path),
+                        }
+                    )
     return rows
 
 
@@ -200,6 +257,7 @@ def summarize_results(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "best_overall": best_row(rows),
         "best_by_decoder": {},
         "best_by_backend": {},
+        "best_by_search": {},
         "best_by_max_caption_length": {},
     }
 
@@ -210,6 +268,10 @@ def summarize_results(rows: list[dict[str, Any]]) -> dict[str, Any]:
     for backend in sorted({str(row["backend"]) for row in rows}):
         subset = [row for row in rows if str(row["backend"]) == backend]
         summary["best_by_backend"][backend] = best_row(subset)
+
+    for search in sorted({str(row["search"]) for row in rows}):
+        subset = [row for row in rows if str(row["search"]) == search]
+        summary["best_by_search"][search] = best_row(subset)
 
     for max_length in sorted({int(row["max_caption_length"]) for row in rows}):
         subset = [row for row in rows if int(row["max_caption_length"]) == max_length]
@@ -262,6 +324,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--split", default="test", choices=("train", "validation", "test"))
     parser.add_argument("--limit-images", type=int, default=None)
     parser.add_argument("--backends", default="keras", help="Comma-separated: keras,scratch")
+    parser.add_argument("--searches", default="greedy", help="Comma-separated: greedy,beam")
+    parser.add_argument("--beam-widths", default="3", help="Comma-separated beam widths used when --searches includes beam")
+    parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--max-caption-lengths", default=None, help="Comma-separated, e.g. 10,20,38")
     parser.add_argument("--output-csv", default="artifacts/experiments/captioning/evaluation_results.csv")
     parser.add_argument("--output-json", default="artifacts/experiments/captioning/evaluation_results.json")
@@ -295,7 +360,9 @@ def main() -> None:
     max_caption_lengths = parse_max_lengths(args.max_caption_lengths, int(split_data["input_sequences"].shape[1]))
     features = feature_mapping(features_dir)
     references = group_reference_tokens(load_caption_records(captions_path))
-    backends = [backend.strip() for backend in args.backends.split(",") if backend.strip()]
+    backends = parse_csv_values(args.backends, {"keras", "scratch"}, "backends")
+    searches = parse_csv_values(args.searches, {"greedy", "beam"}, "searches")
+    beam_widths = parse_beam_widths(args.beam_widths)
     model_paths = discover_model_paths(models_dir)
 
     rows: list[dict[str, Any]] = []
@@ -310,6 +377,9 @@ def main() -> None:
                 vocabulary=vocabulary,
                 references=references,
                 max_caption_lengths=max_caption_lengths,
+                searches=searches,
+                beam_widths=beam_widths,
+                batch_size=args.batch_size,
                 predictions_dir=predictions_dir,
             )
         )

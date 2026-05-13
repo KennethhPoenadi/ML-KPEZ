@@ -56,6 +56,8 @@ def infer_injection_mode(keras_model) -> str:
     layer_names = {layer.name for layer in keras_model.layers}
     if any(name.startswith("init_h_") for name in layer_names):
         return "init"
+    if "init_feature_projection" in layer_names or "init_context_concat" in layer_names:
+        return "init"
     return "pre"
 
 
@@ -64,8 +66,6 @@ def build_predictor(keras_model, backend: Backend, decoder_kind: DecoderKind | N
         return predict_with_keras_model(keras_model)
 
     decoder_kind = decoder_kind or infer_decoder_kind(keras_model)
-    if infer_injection_mode(keras_model) != "pre":
-        raise ValueError("Scratch captioner currently supports pre-inject models only")
     if decoder_kind == "rnn":
         return predict_with_scratch_captioner(build_scratch_rnn_captioner_from_keras(keras_model))
     if decoder_kind == "lstm":
@@ -200,12 +200,15 @@ def generate_captions(
     backend: Backend = "keras",
     search: SearchStrategy = "greedy",
     beam_width: int = 3,
+    batch_size: int = 64,
     decoder_kind: DecoderKind | None = None,
 ) -> list[dict[str, object]]:
     import tensorflow as tf
 
     if not image_ids:
         raise ValueError("image_ids must not be empty")
+    if batch_size <= 0:
+        raise ValueError("batch_size must be positive")
 
     vocabulary = load_vocabulary(vocabulary_path)
     features = feature_mapping(features_dir)
@@ -218,13 +221,18 @@ def generate_captions(
     predict_probs = build_predictor(keras_model, backend=backend, decoder_kind=decoder_kind)
 
     if search == "greedy":
-        feature_batch = np.stack([features[image_id] for image_id in image_ids], axis=0)
-        batch_token_ids = greedy_decode_batch(
-            predict_probs,
-            feature_batch,
-            vocabulary,
-            max_caption_length=max_caption_length,
-        )
+        batch_token_ids = []
+        for start in range(0, len(image_ids), batch_size):
+            batch_ids = image_ids[start : start + batch_size]
+            feature_batch = np.stack([features[image_id] for image_id in batch_ids], axis=0)
+            batch_token_ids.extend(
+                greedy_decode_batch(
+                    predict_probs,
+                    feature_batch,
+                    vocabulary,
+                    max_caption_length=max_caption_length,
+                )
+            )
     elif search == "beam":
         batch_token_ids = [
             beam_search_decode(
@@ -279,6 +287,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--decoder-kind", choices=("rnn", "lstm"), default=None)
     parser.add_argument("--search", choices=("greedy", "beam"), default="greedy")
     parser.add_argument("--beam-width", type=int, default=3)
+    parser.add_argument("--batch-size", type=int, default=64)
     return parser.parse_args()
 
 
@@ -294,6 +303,7 @@ def main() -> None:
             backend=args.backend,
             search=args.search,
             beam_width=args.beam_width,
+            batch_size=args.batch_size,
             decoder_kind=args.decoder_kind,
         )
         print(json.dumps(result, indent=2))
