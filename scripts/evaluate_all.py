@@ -48,7 +48,6 @@ def _collect_captioning_experiments(predictions_dir: Path) -> List[Dict[str, Any
     if not predictions_dir.exists():
         return results
     
-    # Look for predictions JSON files, including artifacts/predictions/captioning.
     for pred_file in sorted(predictions_dir.rglob("*.json")):
         try:
             data = json.loads(pred_file.read_text(encoding="utf-8"))
@@ -187,10 +186,8 @@ def main() -> None:
     if cnn_plot_count or captioning_plot_count:
         print(f"Saved {cnn_plot_count + captioning_plot_count} training plots to {args.plots_dir}")
     
-    # Combine results
     all_results = cnn_results + captioning_results
     
-    # Write summaries
     if args.format in ("csv", "both"):
         csv_path = args.out_dir / "evaluation_summary.csv"
         write_summary_csv(all_results, csv_path)
@@ -206,7 +203,6 @@ def main() -> None:
         stats_path.write_text(json.dumps(stats, indent=2))
         print(f"Wrote evaluation statistics to {stats_path}")
     
-    # Print summary
     if all_results:
         print(f"\nTotal experiments: {len(all_results)}")
         cnn_count = len(cnn_results)

@@ -141,7 +141,6 @@ def generate_statistics_summary(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
         "metric_ranges": {},
     }
     
-    # Calculate ranges for numeric metrics
     numeric_fields = set()
     for row in rows:
         for key, value in row.items():

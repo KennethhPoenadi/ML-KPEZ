@@ -21,7 +21,6 @@ def _organize_assets_by_type(src_dir: Path, dest_root: Path) -> int:
     dest_root.mkdir(parents=True, exist_ok=True)
     copied = 0
     
-    # Define asset organization patterns
     asset_types: Dict[str, List[str]] = {
         "plots": ["*loss*.png", "*loss*.jpg", "*f1*.png", "*f1*.jpg", "*bleu*.png", "*bleu*.jpg"],
         "metrics": ["summary.csv", "summary.json", "statistics.json"],
@@ -90,7 +89,6 @@ def main() -> None:
     
     total_copied = 0
     
-    # Copy plots
     if args.src_plots.exists():
         if args.organize:
             plots_dest = args.dest / "plots"
@@ -101,7 +99,6 @@ def main() -> None:
         if copied > 0:
             print(f"Copied {copied} plot assets to {plots_dest}")
     
-    # Copy metrics
     if args.src_metrics.exists():
         if args.organize:
             metrics_dest = args.dest / "metrics"
@@ -112,7 +109,6 @@ def main() -> None:
         if copied > 0:
             print(f"Copied {copied} metric files to {metrics_dest}")
     
-    # Copy predictions
     if args.src_predictions.exists() and args.organize:
         predictions_dest = args.dest / "predictions"
         copied = _copy_assets(args.src_predictions, predictions_dest, ["*.json"])
