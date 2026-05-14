@@ -70,12 +70,14 @@ def greedy_decode(
     image_feature: np.ndarray,
     vocabulary: CaptionVocabulary,
     max_caption_length: int,
+    input_sequence_length: int | None = None,
 ) -> list[int]:
     prefix = [vocabulary.start_id]
     generated: list[int] = []
+    sequence_length = input_sequence_length or max_caption_length
 
-    for position in range(max_caption_length):
-        model_input = make_padded_input(prefix, max_caption_length, vocabulary.pad_id)
+    for position in range(min(max_caption_length, sequence_length)):
+        model_input = make_padded_input(prefix, sequence_length, vocabulary.pad_id)
         probabilities = predict_probs(np.asarray(image_feature, dtype=np.float32)[np.newaxis, :], model_input)
         next_id = int(np.argmax(probabilities[0, position]))
         if next_id == vocabulary.end_id:
@@ -91,6 +93,7 @@ def greedy_decode_batch(
     image_features: np.ndarray,
     vocabulary: CaptionVocabulary,
     max_caption_length: int,
+    input_sequence_length: int | None = None,
 ) -> list[list[int]]:
     features = np.asarray(image_features, dtype=np.float32)
     if features.ndim == 1:
@@ -102,12 +105,13 @@ def greedy_decode_batch(
     prefixes = [[vocabulary.start_id] for _ in range(batch_size)]
     generated: list[list[int]] = [[] for _ in range(batch_size)]
     active = np.ones(batch_size, dtype=bool)
+    sequence_length = input_sequence_length or max_caption_length
 
-    for position in range(max_caption_length):
+    for position in range(min(max_caption_length, sequence_length)):
         if not np.any(active):
             break
 
-        model_input = make_padded_batch(prefixes, max_caption_length, vocabulary.pad_id)
+        model_input = make_padded_batch(prefixes, sequence_length, vocabulary.pad_id)
         probabilities = predict_probs(features, model_input)
         next_ids = np.argmax(probabilities[:, position, :], axis=-1).astype(np.int64)
 
@@ -130,21 +134,23 @@ def beam_search_decode(
     vocabulary: CaptionVocabulary,
     max_caption_length: int,
     beam_width: int = 3,
+    input_sequence_length: int | None = None,
 ) -> list[int]:
     if beam_width <= 0:
         raise ValueError("beam_width must be positive")
 
     beams: list[tuple[list[int], float, bool]] = [([vocabulary.start_id], 0.0, False)]
     feature_batch = np.asarray(image_feature, dtype=np.float32)[np.newaxis, :]
+    sequence_length = input_sequence_length or max_caption_length
 
-    for position in range(max_caption_length):
+    for position in range(min(max_caption_length, sequence_length)):
         candidates: list[tuple[list[int], float, bool]] = []
         for prefix, score, ended in beams:
             if ended:
                 candidates.append((prefix, score, True))
                 continue
 
-            model_input = make_padded_input(prefix, max_caption_length, vocabulary.pad_id)
+            model_input = make_padded_input(prefix, sequence_length, vocabulary.pad_id)
             probabilities = predict_probs(feature_batch, model_input)[0, position]
             top_ids = np.argsort(probabilities)[-beam_width:][::-1]
             for token_id in top_ids:

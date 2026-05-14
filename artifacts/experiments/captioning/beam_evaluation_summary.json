@@ -1,0 +1,116 @@
+{
+  "num_rows": 24,
+  "best_overall": {
+    "model": "lstm_layers1_hidden2",
+    "backend": "keras",
+    "search": "beam",
+    "beam_width": 3,
+    "max_caption_length": 20,
+    "model_input_length": 38,
+    "bleu4": 0.17852322237413587,
+    "meteor": 0.06320551343506813,
+    "num_predictions": 50,
+    "batch_size": 1024,
+    "execution_time_seconds": 12.23002516599081,
+    "seconds_per_image": 0.2446005033198162,
+    "predictions_path": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/artifacts/predictions/captioning/lstm_layers1_hidden2_keras_beam3_maxlen20.json"
+  },
+  "best_by_decoder": {
+    "lstm": {
+      "model": "lstm_layers1_hidden2",
+      "backend": "keras",
+      "search": "beam",
+      "beam_width": 3,
+      "max_caption_length": 20,
+      "model_input_length": 38,
+      "bleu4": 0.17852322237413587,
+      "meteor": 0.06320551343506813,
+      "num_predictions": 50,
+      "batch_size": 1024,
+      "execution_time_seconds": 12.23002516599081,
+      "seconds_per_image": 0.2446005033198162,
+      "predictions_path": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/artifacts/predictions/captioning/lstm_layers1_hidden2_keras_beam3_maxlen20.json"
+    },
+    "rnn": {
+      "model": "rnn_layers1_hidden2",
+      "backend": "keras",
+      "search": "greedy",
+      "beam_width": null,
+      "max_caption_length": 20,
+      "model_input_length": 38,
+      "bleu4": 0.06910227510413736,
+      "meteor": 0.2049037373438333,
+      "num_predictions": 50,
+      "batch_size": 1024,
+      "execution_time_seconds": 1.357601791009074,
+      "seconds_per_image": 0.027152035820181483,
+      "predictions_path": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/artifacts/predictions/captioning/rnn_layers1_hidden2_keras_greedy_maxlen20.json"
+    }
+  },
+  "best_by_backend": {
+    "keras": {
+      "model": "lstm_layers1_hidden2",
+      "backend": "keras",
+      "search": "beam",
+      "beam_width": 3,
+      "max_caption_length": 20,
+      "model_input_length": 38,
+      "bleu4": 0.17852322237413587,
+      "meteor": 0.06320551343506813,
+      "num_predictions": 50,
+      "batch_size": 1024,
+      "execution_time_seconds": 12.23002516599081,
+      "seconds_per_image": 0.2446005033198162,
+      "predictions_path": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/artifacts/predictions/captioning/lstm_layers1_hidden2_keras_beam3_maxlen20.json"
+    }
+  },
+  "best_by_search": {
+    "beam": {
+      "model": "lstm_layers1_hidden2",
+      "backend": "keras",
+      "search": "beam",
+      "beam_width": 3,
+      "max_caption_length": 20,
+      "model_input_length": 38,
+      "bleu4": 0.17852322237413587,
+      "meteor": 0.06320551343506813,
+      "num_predictions": 50,
+      "batch_size": 1024,
+      "execution_time_seconds": 12.23002516599081,
+      "seconds_per_image": 0.2446005033198162,
+      "predictions_path": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/artifacts/predictions/captioning/lstm_layers1_hidden2_keras_beam3_maxlen20.json"
+    },
+    "greedy": {
+      "model": "lstm_layers1_hidden4",
+      "backend": "keras",
+      "search": "greedy",
+      "beam_width": null,
+      "max_caption_length": 20,
+      "model_input_length": 38,
+      "bleu4": 0.06910227510413736,
+      "meteor": 0.2049037373438333,
+      "num_predictions": 50,
+      "batch_size": 1024,
+      "execution_time_seconds": 1.485646084009204,
+      "seconds_per_image": 0.029712921680184082,
+      "predictions_path": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/artifacts/predictions/captioning/lstm_layers1_hidden4_keras_greedy_maxlen20.json"
+    }
+  },
+  "best_by_max_caption_length": {
+    "20": {
+      "model": "lstm_layers1_hidden2",
+      "backend": "keras",
+      "search": "beam",
+      "beam_width": 3,
+      "max_caption_length": 20,
+      "model_input_length": 38,
+      "bleu4": 0.17852322237413587,
+      "meteor": 0.06320551343506813,
+      "num_predictions": 50,
+      "batch_size": 1024,
+      "execution_time_seconds": 12.23002516599081,
+      "seconds_per_image": 0.2446005033198162,
+      "predictions_path": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/artifacts/predictions/captioning/lstm_layers1_hidden2_keras_beam3_maxlen20.json"
+    }
+  }
+}

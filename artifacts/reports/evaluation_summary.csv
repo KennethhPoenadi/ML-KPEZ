@@ -1,0 +1,17 @@
+experiment,model_name,conv_filters,dropout_rate,kernel_sizes,pooling_type,test_macro_f1,type,validation_macro_f1
+cnn_1conv_f16_k3_averagepool,cnn_1conv_f16_k3_averagepool,[16],0.3,[3],average,0.0,CNN,0.40332016198104687
+cnn_1conv_f16_k3_maxpool,cnn_1conv_f16_k3_maxpool,[16],0.3,[3],max,0.0,CNN,0.5007004676910038
+cnn_1conv_f16_k5_averagepool,cnn_1conv_f16_k5_averagepool,[16],0.3,[5],average,0.0,CNN,0.5259418553471821
+cnn_1conv_f16_k5_maxpool,cnn_1conv_f16_k5_maxpool,[16],0.3,[5],max,0.0,CNN,0.5170649039206706
+cnn_1conv_f32_k3_averagepool,cnn_1conv_f32_k3_averagepool,[32],0.3,[3],average,0.0,CNN,0.4643347192451901
+cnn_1conv_f32_k3_maxpool,cnn_1conv_f32_k3_maxpool,[32],0.3,[3],max,0.0,CNN,0.48552707294714886
+cnn_1conv_f32_k5_averagepool,cnn_1conv_f32_k5_averagepool,[32],0.3,[5],average,0.0,CNN,0.5049941564997894
+cnn_1conv_f32_k5_maxpool,cnn_1conv_f32_k5_maxpool,[32],0.3,[5],max,0.0,CNN,0.5078009366046797
+cnn_2conv_f16-32_k3-3_averagepool,cnn_2conv_f16-32_k3-3_averagepool,"[16, 32]",0.3,"[3, 3]",average,0.0,CNN,0.5787748107095683
+cnn_2conv_f16-32_k3-3_maxpool,cnn_2conv_f16-32_k3-3_maxpool,"[16, 32]",0.3,"[3, 3]",max,0.0,CNN,0.5860168004737304
+cnn_2conv_f16-32_k5-5_averagepool,cnn_2conv_f16-32_k5-5_averagepool,"[16, 32]",0.3,"[5, 5]",average,0.0,CNN,0.5838969799255429
+cnn_2conv_f16-32_k5-5_maxpool,cnn_2conv_f16-32_k5-5_maxpool,"[16, 32]",0.3,"[5, 5]",max,0.0,CNN,0.607773893769293
+cnn_2conv_f32-64_k3-3_averagepool,cnn_2conv_f32-64_k3-3_averagepool,"[32, 64]",0.3,"[3, 3]",average,0.0,CNN,0.5868480690946766
+cnn_2conv_f32-64_k3-3_maxpool,cnn_2conv_f32-64_k3-3_maxpool,"[32, 64]",0.3,"[3, 3]",max,0.0,CNN,0.6329338517724882
+cnn_2conv_f32-64_k5-5_averagepool,cnn_2conv_f32-64_k5-5_averagepool,"[32, 64]",0.3,"[5, 5]",average,0.0,CNN,0.6022247835713483
+cnn_2conv_f32-64_k5-5_maxpool,cnn_2conv_f32-64_k5-5_maxpool,"[32, 64]",0.3,"[5, 5]",max,0.0,CNN,0.6638268743428183

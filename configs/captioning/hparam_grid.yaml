@@ -1,5 +1,5 @@
 model:
-  embed_dim: 256
+  embed_dim: 4
   dropout_rate: 0.0
   learning_rate: 0.001
 
@@ -8,7 +8,7 @@ training:
   features_dir: data/features/captioning
   output_dir: models/keras/captioning
   history_dir: artifacts/experiments/captioning
-  batch_size: 64
+  batch_size: 512
   epochs: 10
   seed: 42
 
@@ -23,5 +23,5 @@ grid:
     - 2
     - 3
   hidden_units:
-    - 128
-    - 512
+    - 2
+    - 4

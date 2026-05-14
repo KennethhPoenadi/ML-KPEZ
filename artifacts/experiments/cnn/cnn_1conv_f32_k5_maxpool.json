@@ -1,0 +1,89 @@
+{
+  "model_config": {
+    "input_shape": [
+      96,
+      96,
+      3
+    ],
+    "num_classes": 6,
+    "conv_filters": [
+      32
+    ],
+    "kernel_sizes": [
+      5
+    ],
+    "pooling_type": "max",
+    "dense_units": [
+      128
+    ],
+    "dropout_rate": 0.3,
+    "learning_rate": 0.001,
+    "activation": "relu",
+    "name": "cnn_1conv_f32_k5_maxpool",
+    "compile_model": true,
+    "metrics": [
+      "accuracy"
+    ]
+  },
+  "training_config": {
+    "train_dir": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/data/raw/intel_image_classification/seg_train/seg_train",
+    "validation_dir": null,
+    "output_dir": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/models/keras/cnn",
+    "history_dir": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/artifacts/experiments/cnn",
+    "image_size": [
+      96,
+      96
+    ],
+    "batch_size": 64,
+    "epochs": 5,
+    "validation_split": 0.2,
+    "seed": 42,
+    "save_format": "keras",
+    "early_stopping_patience": 1
+  },
+  "class_names": [
+    "buildings",
+    "forest",
+    "glacier",
+    "mountain",
+    "sea",
+    "street"
+  ],
+  "history": {
+    "accuracy": [
+      0.31742072105407715,
+      0.4007837474346161,
+      0.4308870732784271,
+      0.4703420102596283,
+      0.5024937391281128
+    ],
+    "loss": [
+      1.6052699089050293,
+      1.4095065593719482,
+      1.32955801486969,
+      1.249617338180542,
+      1.1771193742752075
+    ],
+    "val_accuracy": [
+      0.3581610918045044,
+      0.4062722623348236,
+      0.4590163826942444,
+      0.4932287931442261,
+      0.5367070436477661
+    ],
+    "val_loss": [
+      1.452223777770996,
+      1.354095458984375,
+      1.27216637134552,
+      1.1893051862716675,
+      1.1081663370132446
+    ]
+  },
+  "metrics": {
+    "validation_macro_f1": 0.5078009366046797
+  },
+  "artifacts": {
+    "weights_path": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/models/keras/cnn/cnn_1conv_f32_k5_maxpool.weights.h5",
+    "model_path": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/models/keras/cnn/cnn_1conv_f32_k5_maxpool.keras"
+  }
+}

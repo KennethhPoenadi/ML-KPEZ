@@ -1,0 +1,30 @@
+{
+  "model_config": {
+    "vocab_size": 7464,
+    "feature_dim": 2048,
+    "max_caption_length": 38,
+    "embed_dim": 4,
+    "hidden_units": 4,
+    "num_recurrent_layers": 3,
+    "dropout_rate": 0.0,
+    "learning_rate": 0.001,
+    "decoder_type": "rnn",
+    "injection_mode": "pre",
+    "name": "rnn_layers3_hidden4"
+  },
+  "architecture_version": "preinject_v1",
+  "training_config": {
+    "processed_dir": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/data/processed/captioning",
+    "features_dir": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/data/features/captioning",
+    "output_dir": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/models/keras/captioning",
+    "history_dir": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/artifacts/experiments/captioning",
+    "batch_size": 512,
+    "epochs": 10,
+    "seed": 42
+  },
+  "model_path": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/models/keras/captioning/rnn_layers3_hidden4.keras",
+  "history_path": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/artifacts/experiments/captioning/rnn_layers3_hidden4_history.json",
+  "best_validation_loss": 1.849300742149353,
+  "train_samples": 30000,
+  "validation_samples": 5000
+}

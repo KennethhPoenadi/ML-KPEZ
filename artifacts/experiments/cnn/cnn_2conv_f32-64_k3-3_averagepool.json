@@ -1,0 +1,91 @@
+{
+  "model_config": {
+    "input_shape": [
+      96,
+      96,
+      3
+    ],
+    "num_classes": 6,
+    "conv_filters": [
+      32,
+      64
+    ],
+    "kernel_sizes": [
+      3,
+      3
+    ],
+    "pooling_type": "average",
+    "dense_units": [
+      128
+    ],
+    "dropout_rate": 0.3,
+    "learning_rate": 0.001,
+    "activation": "relu",
+    "name": "cnn_2conv_f32-64_k3-3_averagepool",
+    "compile_model": true,
+    "metrics": [
+      "accuracy"
+    ]
+  },
+  "training_config": {
+    "train_dir": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/data/raw/intel_image_classification/seg_train/seg_train",
+    "validation_dir": null,
+    "output_dir": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/models/keras/cnn",
+    "history_dir": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/artifacts/experiments/cnn",
+    "image_size": [
+      96,
+      96
+    ],
+    "batch_size": 64,
+    "epochs": 5,
+    "validation_split": 0.2,
+    "seed": 42,
+    "save_format": "keras",
+    "early_stopping_patience": 1
+  },
+  "class_names": [
+    "buildings",
+    "forest",
+    "glacier",
+    "mountain",
+    "sea",
+    "street"
+  ],
+  "history": {
+    "accuracy": [
+      0.37584608793258667,
+      0.4821873903274536,
+      0.5341111421585083,
+      0.5527253150939941,
+      0.5709832310676575
+    ],
+    "loss": [
+      1.4852397441864014,
+      1.2412941455841064,
+      1.1326820850372314,
+      1.0934338569641113,
+      1.061111569404602
+    ],
+    "val_accuracy": [
+      0.428011417388916,
+      0.5235210061073303,
+      0.5438346266746521,
+      0.5702067017555237,
+      0.5880256295204163
+    ],
+    "val_loss": [
+      1.3315010070800781,
+      1.1624982357025146,
+      1.1134040355682373,
+      1.0578508377075195,
+      1.0263698101043701
+    ]
+  },
+  "metrics": {
+    "validation_macro_f1": 0.5868480690946766
+  },
+  "artifacts": {
+    "weights_path": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/models/keras/cnn/cnn_2conv_f32-64_k3-3_averagepool.weights.h5",
+    "model_path": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/models/keras/cnn/cnn_2conv_f32-64_k3-3_averagepool.keras"
+  }
+}

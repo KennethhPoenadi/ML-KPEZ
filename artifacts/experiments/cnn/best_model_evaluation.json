@@ -1,0 +1,47 @@
+{
+  "best_experiment": "cnn_2conv_f32-64_k5-5_maxpool",
+  "best_validation_macro_f1": 0.6638268743428183,
+  "metadata_path": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/artifacts/experiments/cnn/cnn_2conv_f32-64_k5-5_maxpool.json",
+  "model_path": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/models/keras/cnn/cnn_2conv_f32-64_k5-5_maxpool.keras",
+  "class_names": [
+    "buildings",
+    "forest",
+    "glacier",
+    "mountain",
+    "sea",
+    "street"
+  ],
+  "test_dir": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/data/raw/intel_image_classification/seg_test/seg_test",
+  "batch_size": 64,
+  "max_batches": null,
+  "scratch_max_batches": 1,
+  "metrics": {
+    "keras": {
+      "macro_f1": 0.6323131896037103,
+      "num_samples": 3000,
+      "execution_time_seconds": 8.648782374999428
+    },
+    "scratch_shared": {
+      "macro_f1": 0.09629629629629628,
+      "num_samples": 64,
+      "execution_time_seconds": 0.7301765419979347,
+      "prediction_agreement_with_keras_same_prefix": 1.0
+    },
+    "scratch_non_shared": {
+      "macro_f1": 0.09629629629629628,
+      "num_samples": 64,
+      "execution_time_seconds": 0.7832233329972951,
+      "prediction_agreement_with_keras_same_prefix": 1.0
+    }
+  },
+  "parameter_counts": {
+    "keras_trainable_and_non_trainable": 62790,
+    "scratch_shared": 62790,
+    "scratch_non_shared": 140534662
+  },
+  "parameter_ratio_non_shared_vs_shared": 2238.169485586877,
+  "notes": [
+    "scratch_non_shared replaces every Conv2D layer with LocallyConnected2D using repeated trained Conv2D weights.",
+    "When scratch_max_batches is not null, scratch metrics are a subset smoke/evaluation run."
+  ]
+}

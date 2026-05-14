@@ -1,0 +1,23 @@
+{
+  "total_experiments": 16,
+  "metric_ranges": {
+    "dropout_rate": {
+      "min": 0.3,
+      "max": 0.3,
+      "mean": 0.3,
+      "count": 16
+    },
+    "test_macro_f1": {
+      "min": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "count": 16
+    },
+    "validation_macro_f1": {
+      "min": 0.40332016198104687,
+      "max": 0.6638268743428183,
+      "mean": 0.5469987711185111,
+      "count": 16
+    }
+  }
+}

@@ -1,0 +1,86 @@
+[
+  {
+    "factor": "conv_layers",
+    "value": "1",
+    "mean_validation_macro_f1": 0.48871053427958894,
+    "best_validation_macro_f1": 0.5259418553471821,
+    "num_runs": 8
+  },
+  {
+    "factor": "conv_layers",
+    "value": "2",
+    "mean_validation_macro_f1": 0.6052870079574333,
+    "best_validation_macro_f1": 0.6638268743428183,
+    "num_runs": 8
+  },
+  {
+    "factor": "filters",
+    "value": "16",
+    "mean_validation_macro_f1": 0.48675684723497586,
+    "best_validation_macro_f1": 0.5259418553471821,
+    "num_runs": 4
+  },
+  {
+    "factor": "filters",
+    "value": "16-32",
+    "mean_validation_macro_f1": 0.5891156212195336,
+    "best_validation_macro_f1": 0.607773893769293,
+    "num_runs": 4
+  },
+  {
+    "factor": "filters",
+    "value": "32",
+    "mean_validation_macro_f1": 0.490664221324202,
+    "best_validation_macro_f1": 0.5078009366046797,
+    "num_runs": 4
+  },
+  {
+    "factor": "filters",
+    "value": "32-64",
+    "mean_validation_macro_f1": 0.6214583946953328,
+    "best_validation_macro_f1": 0.6638268743428183,
+    "num_runs": 4
+  },
+  {
+    "factor": "kernels",
+    "value": "3",
+    "mean_validation_macro_f1": 0.4634706054660974,
+    "best_validation_macro_f1": 0.5007004676910038,
+    "num_runs": 4
+  },
+  {
+    "factor": "kernels",
+    "value": "3-3",
+    "mean_validation_macro_f1": 0.5961433830126158,
+    "best_validation_macro_f1": 0.6329338517724882,
+    "num_runs": 4
+  },
+  {
+    "factor": "kernels",
+    "value": "5",
+    "mean_validation_macro_f1": 0.5139504630930805,
+    "best_validation_macro_f1": 0.5259418553471821,
+    "num_runs": 4
+  },
+  {
+    "factor": "kernels",
+    "value": "5-5",
+    "mean_validation_macro_f1": 0.6144306329022506,
+    "best_validation_macro_f1": 0.6638268743428183,
+    "num_runs": 4
+  },
+  {
+    "factor": "pooling",
+    "value": "average",
+    "mean_validation_macro_f1": 0.5312919420467931,
+    "best_validation_macro_f1": 0.6022247835713483,
+    "num_runs": 8
+  },
+  {
+    "factor": "pooling",
+    "value": "max",
+    "mean_validation_macro_f1": 0.5627056001902291,
+    "best_validation_macro_f1": 0.6638268743428183,
+    "num_runs": 8
+  }
+]

@@ -94,6 +94,7 @@ def generate_predictions(
     features: dict[str, np.ndarray],
     vocabulary,
     max_caption_length: int,
+    input_sequence_length: int,
     search: str = "greedy",
     beam_width: int = 3,
     batch_size: int = 64,
@@ -120,6 +121,7 @@ def generate_predictions(
                     feature_batch,
                     vocabulary,
                     max_caption_length=max_caption_length,
+                    input_sequence_length=input_sequence_length,
                 )
             )
     elif search == "beam":
@@ -130,6 +132,7 @@ def generate_predictions(
                 vocabulary,
                 max_caption_length=max_caption_length,
                 beam_width=beam_width,
+                input_sequence_length=input_sequence_length,
             )
             for image_id in image_ids
         ]
@@ -151,6 +154,7 @@ def evaluate_one_model(
     vocabulary,
     references: dict[str, list[list[str]]],
     max_caption_lengths: list[int],
+    input_sequence_length: int,
     searches: list[str],
     beam_widths: list[int],
     batch_size: int,
@@ -158,7 +162,7 @@ def evaluate_one_model(
 ) -> list[dict[str, Any]]:
     import tensorflow as tf
 
-    keras_model = tf.keras.models.load_model(model_path)
+    keras_model = tf.keras.models.load_model(model_path, safe_mode=False)
     rows: list[dict[str, Any]] = []
     predictors = {"keras": predict_with_keras_model(keras_model)}
     if "scratch" in backends:
@@ -180,6 +184,7 @@ def evaluate_one_model(
                         features=features,
                         vocabulary=vocabulary,
                         max_caption_length=max_caption_length,
+                        input_sequence_length=input_sequence_length,
                         search=search,
                         beam_width=beam_width,
                         batch_size=batch_size,
@@ -209,6 +214,7 @@ def evaluate_one_model(
                             "search": search,
                             "beam_width": None if search == "greedy" else beam_width,
                             "max_caption_length": max_caption_length,
+                            "model_input_length": input_sequence_length,
                             "bleu4": metrics["bleu4"],
                             "meteor": metrics["meteor"],
                             "num_predictions": int(metrics["num_predictions"]),
@@ -377,6 +383,7 @@ def main() -> None:
                 vocabulary=vocabulary,
                 references=references,
                 max_caption_lengths=max_caption_lengths,
+                input_sequence_length=int(split_data["input_sequences"].shape[1]),
                 searches=searches,
                 beam_widths=beam_widths,
                 batch_size=args.batch_size,

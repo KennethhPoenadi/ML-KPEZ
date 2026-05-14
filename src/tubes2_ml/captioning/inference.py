@@ -84,9 +84,16 @@ def decode_feature(
     decoder_kind: DecoderKind | None = None,
 ) -> tuple[str, list[int]]:
     predict_probs = build_predictor(keras_model, backend=backend, decoder_kind=decoder_kind)
+    input_sequence_length = _model_caption_input_length(keras_model)
 
     if search == "greedy":
-        token_ids = greedy_decode(predict_probs, image_feature, vocabulary, max_caption_length)
+        token_ids = greedy_decode(
+            predict_probs,
+            image_feature,
+            vocabulary,
+            max_caption_length,
+            input_sequence_length=input_sequence_length,
+        )
     elif search == "beam":
         token_ids = beam_search_decode(
             predict_probs,
@@ -94,6 +101,7 @@ def decode_feature(
             vocabulary,
             max_caption_length,
             beam_width=beam_width,
+            input_sequence_length=input_sequence_length,
         )
     else:
         raise ValueError("search must be either 'greedy' or 'beam'")
@@ -126,7 +134,7 @@ def generate_caption(
     if image_id not in features:
         raise KeyError(f"Image id not found in extracted features: {image_id}")
 
-    keras_model = tf.keras.models.load_model(model_path)
+    keras_model = tf.keras.models.load_model(model_path, safe_mode=False)
     image_feature = features[image_id]
     caption, token_ids = decode_feature(
         image_feature=image_feature,
@@ -167,7 +175,7 @@ def generate_caption_from_image(
         raise FileNotFoundError(f"Image file not found: {path}")
 
     vocabulary = load_vocabulary(vocabulary_path)
-    keras_model = tf.keras.models.load_model(model_path)
+    keras_model = tf.keras.models.load_model(model_path, safe_mode=False)
     image_feature = extract_image_feature(path, encoder_name=encoder_name)
     caption, token_ids = decode_feature(
         image_feature=image_feature,
@@ -217,7 +225,7 @@ def generate_captions(
         preview = ", ".join(missing[:5])
         raise KeyError(f"Image ids not found in extracted features: {preview}")
 
-    keras_model = tf.keras.models.load_model(model_path)
+    keras_model = tf.keras.models.load_model(model_path, safe_mode=False)
     predict_probs = build_predictor(keras_model, backend=backend, decoder_kind=decoder_kind)
 
     if search == "greedy":
@@ -231,6 +239,7 @@ def generate_captions(
                     feature_batch,
                     vocabulary,
                     max_caption_length=max_caption_length,
+                    input_sequence_length=_model_caption_input_length(keras_model),
                 )
             )
     elif search == "beam":
@@ -241,6 +250,7 @@ def generate_captions(
                 vocabulary,
                 max_caption_length=max_caption_length,
                 beam_width=beam_width,
+                input_sequence_length=_model_caption_input_length(keras_model),
             )
             for image_id in image_ids
         ]
@@ -270,6 +280,14 @@ def parse_image_ids(args: argparse.Namespace) -> list[str]:
         path = Path(args.image_ids_file)
         image_ids.extend(line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
     return image_ids
+
+
+def _model_caption_input_length(keras_model) -> int | None:
+    shape = keras_model.input_shape
+    if isinstance(shape, list) and len(shape) >= 2:
+        length = shape[1][1]
+        return None if length is None else int(length)
+    return None
 
 
 def parse_args() -> argparse.Namespace:
