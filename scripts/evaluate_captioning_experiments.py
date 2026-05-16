@@ -21,7 +21,7 @@ from tubes2_ml.captioning.decoding import (
     predict_with_keras_model,
     predict_with_scratch_captioner,
 )
-from tubes2_ml.captioning.evaluate import evaluate_caption_predictions, group_reference_tokens
+from tubes2_ml.captioning.evaluate import evaluate_caption_predictions, group_reference_tokens, load_prediction_json
 from tubes2_ml.captioning.feature_extraction import feature_mapping
 from tubes2_ml.captioning.inference import infer_decoder_kind, load_vocabulary
 from tubes2_ml.captioning.preprocessing import load_caption_records
@@ -159,6 +159,7 @@ def evaluate_one_model(
     beam_widths: list[int],
     batch_size: int,
     predictions_dir: Path,
+    skip_existing_predictions: bool,
 ) -> list[dict[str, Any]]:
     import tensorflow as tf
 
@@ -177,35 +178,65 @@ def evaluate_one_model(
             for search in searches:
                 active_beam_widths = beam_widths if search == "beam" else [0]
                 for beam_width in active_beam_widths:
-                    start_time = time.perf_counter()
-                    predictions = generate_predictions(
-                        predictors[backend],
-                        image_ids=image_ids,
-                        features=features,
-                        vocabulary=vocabulary,
-                        max_caption_length=max_caption_length,
-                        input_sequence_length=input_sequence_length,
-                        search=search,
-                        beam_width=beam_width,
-                        batch_size=batch_size,
-                    )
-                    elapsed_seconds = time.perf_counter() - start_time
-                    metrics = evaluate_caption_predictions(predictions, references)
-
                     predictions_dir.mkdir(parents=True, exist_ok=True)
                     search_suffix = search if search == "greedy" else f"beam{beam_width}"
                     predictions_path = (
                         predictions_dir / f"{model_path.stem}_{backend}_{search_suffix}_maxlen{max_caption_length}.json"
                     )
-                    predictions_payload = [
-                        {
-                            "image_id": image_id,
-                            "caption": predictions[image_id],
-                            "references": [" ".join(tokens) for tokens in references.get(image_id, [])],
-                        }
-                        for image_id in image_ids
-                    ]
-                    predictions_path.write_text(json.dumps(predictions_payload, indent=2), encoding="utf-8")
+
+                    predictions: dict[str, str]
+                    elapsed_seconds: float | None = None
+                    if skip_existing_predictions and predictions_path.is_file():
+                        existing_predictions = load_prediction_json(predictions_path)
+                        missing_image_ids = [image_id for image_id in image_ids if image_id not in existing_predictions]
+                        if not missing_image_ids:
+                            predictions = {image_id: existing_predictions[image_id] for image_id in image_ids}
+                            print(f"Using existing predictions: {predictions_path.name}")
+                        else:
+                            print(
+                                f"Existing predictions incomplete ({len(missing_image_ids)} missing): "
+                                f"{predictions_path.name}"
+                            )
+                            start_time = time.perf_counter()
+                            predictions = generate_predictions(
+                                predictors[backend],
+                                image_ids=image_ids,
+                                features=features,
+                                vocabulary=vocabulary,
+                                max_caption_length=max_caption_length,
+                                input_sequence_length=input_sequence_length,
+                                search=search,
+                                beam_width=beam_width,
+                                batch_size=batch_size,
+                            )
+                            elapsed_seconds = time.perf_counter() - start_time
+                    else:
+                        start_time = time.perf_counter()
+                        predictions = generate_predictions(
+                            predictors[backend],
+                            image_ids=image_ids,
+                            features=features,
+                            vocabulary=vocabulary,
+                            max_caption_length=max_caption_length,
+                            input_sequence_length=input_sequence_length,
+                            search=search,
+                            beam_width=beam_width,
+                            batch_size=batch_size,
+                        )
+                        elapsed_seconds = time.perf_counter() - start_time
+
+                    metrics = evaluate_caption_predictions(predictions, references)
+
+                    if elapsed_seconds is not None:
+                        predictions_payload = [
+                            {
+                                "image_id": image_id,
+                                "caption": predictions[image_id],
+                                "references": [" ".join(tokens) for tokens in references.get(image_id, [])],
+                            }
+                            for image_id in image_ids
+                        ]
+                        predictions_path.write_text(json.dumps(predictions_payload, indent=2), encoding="utf-8")
 
                     rows.append(
                         {
@@ -220,7 +251,9 @@ def evaluate_one_model(
                             "num_predictions": int(metrics["num_predictions"]),
                             "batch_size": batch_size,
                             "execution_time_seconds": elapsed_seconds,
-                            "seconds_per_image": elapsed_seconds / max(1, len(image_ids)),
+                            "seconds_per_image": (
+                                elapsed_seconds / max(1, len(image_ids)) if elapsed_seconds is not None else None
+                            ),
                             "predictions_path": str(predictions_path),
                         }
                     )
@@ -340,6 +373,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--qualitative-json", default="artifacts/predictions/captioning/qualitative_samples.json")
     parser.add_argument("--qualitative-samples", type=int, default=10)
     parser.add_argument("--predictions-dir", default="artifacts/predictions/captioning")
+    parser.add_argument(
+        "--skip-existing-predictions",
+        action="store_true",
+        help="Reuse prediction JSON files when they already contain every requested image id.",
+    )
     return parser.parse_args()
 
 
@@ -388,6 +426,7 @@ def main() -> None:
                 beam_widths=beam_widths,
                 batch_size=args.batch_size,
                 predictions_dir=predictions_dir,
+                skip_existing_predictions=args.skip_existing_predictions,
             )
         )
 

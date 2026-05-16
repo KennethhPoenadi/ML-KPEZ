@@ -1,5 +1,5 @@
 {
-  "num_rows": 24,
+  "num_rows": 72,
   "best_overall": {
     "model": "lstm_layers1_hidden2",
     "backend": "keras",

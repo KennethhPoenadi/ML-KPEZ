@@ -1,0 +1,129 @@
+{
+  "source_result": {
+    "model": "init_rnn_layers1_hidden4",
+    "backend": "keras",
+    "search": "greedy",
+    "beam_width": null,
+    "max_caption_length": 10,
+    "model_input_length": 38,
+    "bleu4": 0.1405093265472343,
+    "meteor": 0.22992152195524113,
+    "num_predictions": 1000,
+    "batch_size": 64,
+    "execution_time_seconds": 8.488495999999941,
+    "seconds_per_image": 0.008488495999999941,
+    "predictions_path": "/Users/alvin/Documents/ITB/sem6/ML/ML-KPEZ/artifacts/predictions/captioning/init_rnn_layers1_hidden4_keras_greedy_maxlen10.json"
+  },
+  "samples": [
+    {
+      "image_id": "3717845800_ab45e255b8",
+      "caption": "a a a a a a a a a a",
+      "references": [
+        "four rugby players on the ground with two standing behind them",
+        "members of two soccer teams struggle on the field to get the ball",
+        "soccer players on the ground fighting for the ball",
+        "the rugby players in red are wrestling the player in yellow to the ground",
+        "three members of the red team are in the grass with a member of the yellow team"
+      ]
+    },
+    {
+      "image_id": "3718007650_e5930b4509",
+      "caption": "a a a a a a a a a a",
+      "references": [
+        "a girl with a black dress and big white bow stands with her back to the camera",
+        "many people gather outside",
+        "people stand outside watching something",
+        "people with costumes are gathered in a wooded area looking the same direction",
+        "the back of a woman in costume little girl looks at her"
+      ]
+    },
+    {
+      "image_id": "3718076407_0b4588d7bc",
+      "caption": "a a a a a a a a a a",
+      "references": [
+        "a brown and white dog is playing with a toy in a field of green grass and clover",
+        "a brown and white dog retrieving a white plushie toy in a field of clover",
+        "a distorted photo of a playing dog in a flower field",
+        "a dog in grass carrying a toy in its mouth",
+        "the little brown dog is running through a clover field with a white object in its mouth"
+      ]
+    },
+    {
+      "image_id": "3718305988_fe2c91fd44",
+      "caption": "a a a a a a a a a a",
+      "references": [
+        "a jogger runs up brick stairs for streght training",
+        "a man is skating down a set of stairs",
+        "a skateboarder jumps on brick stairs",
+        "a young man skateboards around the empty outdoor sports arena",
+        "the man is skateboarding on a large brick staircase"
+      ]
+    },
+    {
+      "image_id": "3718892835_a3e74a3417",
+      "caption": "a a a a a a a a a a",
+      "references": [
+        "a boy falls off of his scooter during an obstacle course",
+        "a boy wearing a helmet flips up his scooter as he skates between orange cones",
+        "a person wearing a helmet begins to fall from a silver scooter",
+        "a woman is about to fall off a scooter",
+        "this person is falling off a scooter in a parking lot"
+      ]
+    },
+    {
+      "image_id": "3718964174_cb2dc1615e",
+      "caption": "a a a a a a a a a a",
+      "references": [
+        "a woman in a blue sweater with a blue scarf around her head",
+        "a woman in a head covering is looking away from the camera",
+        "a woman is wearing a blue headscarf and a blue sweater",
+        "a woman wearing a teal cardigan with a teal scarf and sunglasses on her head",
+        "there is a woman with a green scarf around her head"
+      ]
+    },
+    {
+      "image_id": "3719461451_07de35af3a",
+      "caption": "a a a a a a a a a a",
+      "references": [
+        "a pelican flies over the water",
+        "a very large bird flying over water",
+        "a white pelican is flying over the ocean",
+        "the white pelican is flying over the ocean",
+        "white gull flying over ocean"
+      ]
+    },
+    {
+      "image_id": "3720210639_18bb34e475",
+      "caption": "a a a a a a a a a a",
+      "references": [
+        "a person in a red hat and shoes doing stunts on a red bike while a person in yellow watches",
+        "a person is doing a trick in the air on a bike while his friend takes a picture",
+        "a red bike jumps toward a person in yellow",
+        "boy in midair on bicycle",
+        "person doing bicycle jump"
+      ]
+    },
+    {
+      "image_id": "3720366614_dfa8fe1088",
+      "caption": "a a a a a a a a a a",
+      "references": [
+        "a small black dog is standing on two feet and wearing a pink tutu",
+        "small dog in costume stands on hind legs to reach dangling flowers",
+        "the dog is jumping up beside a red wall",
+        "the small brown and black down is wearing a pink tutu",
+        "the small dog wearing a tutu stands on its hind legs"
+      ]
+    },
+    {
+      "image_id": "3721082512_8277087f3f",
+      "caption": "a a a a a a a a a a",
+      "references": [
+        "a man riding a bike through the forest",
+        "a mountain biker rides through a shady trail",
+        "a mountain biker travels along a dirt trail inside a heavily wooded area",
+        "a person biking near trees",
+        "bicyclist in racing gear rides through forest area"
+      ]
+    }
+  ]
+}

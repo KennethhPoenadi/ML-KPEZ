@@ -321,7 +321,6 @@ def main() -> None:
             backend=args.backend,
             search=args.search,
             beam_width=args.beam_width,
-            batch_size=args.batch_size,
             decoder_kind=args.decoder_kind,
         )
         print(json.dumps(result, indent=2))
@@ -338,6 +337,7 @@ def main() -> None:
             backend=args.backend,
             search=args.search,
             beam_width=args.beam_width,
+            batch_size=args.batch_size,
             decoder_kind=args.decoder_kind,
         )
         payload: object = results[0] if len(results) == 1 else results

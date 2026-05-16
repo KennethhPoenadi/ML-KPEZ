@@ -1,0 +1,30 @@
+{
+  "model_config": {
+    "vocab_size": 7464,
+    "feature_dim": 2048,
+    "max_caption_length": 38,
+    "embed_dim": 4,
+    "hidden_units": 4,
+    "num_recurrent_layers": 2,
+    "dropout_rate": 0.0,
+    "learning_rate": 0.001,
+    "decoder_type": "rnn",
+    "injection_mode": "init",
+    "name": "init_rnn_layers2_hidden4"
+  },
+  "architecture_version": "post_recurrent_concat_v1",
+  "training_config": {
+    "processed_dir": "/Users/alvin/Documents/ITB/sem6/ML/ML-KPEZ/data/processed/captioning",
+    "features_dir": "/Users/alvin/Documents/ITB/sem6/ML/ML-KPEZ/data/features/captioning",
+    "output_dir": "/Users/alvin/Documents/ITB/sem6/ML/ML-KPEZ/models/keras/captioning",
+    "history_dir": "/Users/alvin/Documents/ITB/sem6/ML/ML-KPEZ/artifacts/experiments/captioning",
+    "batch_size": 512,
+    "epochs": 10,
+    "seed": 42
+  },
+  "model_path": "/Users/alvin/Documents/ITB/sem6/ML/ML-KPEZ/models/keras/captioning/init_rnn_layers2_hidden4.keras",
+  "history_path": "/Users/alvin/Documents/ITB/sem6/ML/ML-KPEZ/artifacts/experiments/captioning/init_rnn_layers2_hidden4_history.json",
+  "best_validation_loss": 1.8598929643630981,
+  "train_samples": 30000,
+  "validation_samples": 5000
+}

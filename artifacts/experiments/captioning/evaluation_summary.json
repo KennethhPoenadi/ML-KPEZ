@@ -1,5 +1,5 @@
 {
-  "num_rows": 72,
+  "num_rows": 144,
   "best_overall": {
     "model": "lstm_layers1_hidden4",
     "backend": "keras",
@@ -123,8 +123,8 @@
       "meteor": 0.20747352827199894,
       "num_predictions": 1000,
       "batch_size": 1024,
-      "execution_time_seconds": 18.72967820899794,
-      "seconds_per_image": 0.01872967820899794,
+      "execution_time_seconds": 9.341351334000137,
+      "seconds_per_image": 0.009341351334000138,
       "predictions_path": "/Users/kennethpoenadi/Documents/Semester 6/ML/Tubes2/artifacts/predictions/captioning/lstm_layers1_hidden4_keras_greedy_maxlen20.json"
     },
     "38": {

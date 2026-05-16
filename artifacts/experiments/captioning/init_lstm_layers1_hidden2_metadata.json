@@ -1,0 +1,30 @@
+{
+  "model_config": {
+    "vocab_size": 7464,
+    "feature_dim": 2048,
+    "max_caption_length": 38,
+    "embed_dim": 4,
+    "hidden_units": 2,
+    "num_recurrent_layers": 1,
+    "dropout_rate": 0.0,
+    "learning_rate": 0.001,
+    "decoder_type": "lstm",
+    "injection_mode": "init",
+    "name": "init_lstm_layers1_hidden2"
+  },
+  "architecture_version": "post_recurrent_concat_v1",
+  "training_config": {
+    "processed_dir": "C:\\Users\\bryan\\OneDrive\\Bryan's Document\\Kuliah\\Semester 6\\ML\\Tubes\\2\\ML-KPEZ\\data\\processed\\captioning",
+    "features_dir": "C:\\Users\\bryan\\OneDrive\\Bryan's Document\\Kuliah\\Semester 6\\ML\\Tubes\\2\\ML-KPEZ\\data\\features\\captioning",
+    "output_dir": "C:\\Users\\bryan\\OneDrive\\Bryan's Document\\Kuliah\\Semester 6\\ML\\Tubes\\2\\ML-KPEZ\\models\\keras\\captioning",
+    "history_dir": "C:\\Users\\bryan\\OneDrive\\Bryan's Document\\Kuliah\\Semester 6\\ML\\Tubes\\2\\ML-KPEZ\\artifacts\\experiments\\captioning",
+    "batch_size": 512,
+    "epochs": 10,
+    "seed": 42
+  },
+  "model_path": "C:\\Users\\bryan\\OneDrive\\Bryan's Document\\Kuliah\\Semester 6\\ML\\Tubes\\2\\ML-KPEZ\\models\\keras\\captioning\\init_lstm_layers1_hidden2.keras",
+  "history_path": "C:\\Users\\bryan\\OneDrive\\Bryan's Document\\Kuliah\\Semester 6\\ML\\Tubes\\2\\ML-KPEZ\\artifacts\\experiments\\captioning\\init_lstm_layers1_hidden2_history.json",
+  "best_validation_loss": 2.0951409339904785,
+  "train_samples": 30000,
+  "validation_samples": 5000
+}

@@ -10,12 +10,12 @@ __pycache__/
 .venv/
 venv/
 env/
+venv-metal/
 
 data/raw/
 data/processed/
 data/features/
 models/
-artifacts/
 
 !data/raw/**/.gitkeep
 !data/processed/**/.gitkeep
